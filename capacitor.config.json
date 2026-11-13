@@ -1,0 +1,10 @@
+{
+  "appId": "app.mafia.juego",
+  "appName": "Mafia",
+  "webDir": "www",
+  "server": {
+    "androidScheme": "https",
+    "cleartext": true,
+    "allowNavigation": ["*"]
+  }
+}

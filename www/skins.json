@@ -1,0 +1,17 @@
+{
+ "skins": [
+  {
+   "id": "demo-don",
+   "name": "Don (ejemplo)",
+   "price": 0,
+   "img": "data:image/svg+xml;utf8,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%20300%20400%22%3E%3Cdefs%3E%3ClinearGradient%20id%3D%22g%22%20x1%3D%220%22%20y1%3D%220%22%20x2%3D%220%22%20y2%3D%221%22%3E%3Cstop%20offset%3D%220%22%20stop-color%3D%22%233a0d12%22/%3E%3Cstop%20offset%3D%221%22%20stop-color%3D%22%231a1a22%22/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect%20width%3D%22300%22%20height%3D%22400%22%20fill%3D%22url%28%23g%29%22/%3E%3Ctext%20x%3D%22150%22%20y%3D%22190%22%20font-size%3D%22140%22%20text-anchor%3D%22middle%22%3E%F0%9F%8E%A9%3C/text%3E%3Ctext%20x%3D%22150%22%20y%3D%22350%22%20font-size%3D%2228%22%20font-family%3D%22sans-serif%22%20fill%3D%22%23fff%22%20text-anchor%3D%22middle%22%3EDON%3C/text%3E%3C/svg%3E"
+  },
+  {
+   "id": "demo-sombra",
+   "name": "Sombra (ejemplo)",
+   "price": 50,
+   "img": "data:image/svg+xml;utf8,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%20300%20400%22%3E%3Cdefs%3E%3ClinearGradient%20id%3D%22g%22%20x1%3D%220%22%20y1%3D%220%22%20x2%3D%220%22%20y2%3D%221%22%3E%3Cstop%20offset%3D%220%22%20stop-color%3D%22%231b2a5a%22/%3E%3Cstop%20offset%3D%221%22%20stop-color%3D%22%230b0b18%22/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect%20width%3D%22300%22%20height%3D%22400%22%20fill%3D%22url%28%23g%29%22/%3E%3Ctext%20x%3D%22150%22%20y%3D%22190%22%20font-size%3D%22140%22%20text-anchor%3D%22middle%22%3E%F0%9F%A5%B7%3C/text%3E%3Ctext%20x%3D%22150%22%20y%3D%22350%22%20font-size%3D%2228%22%20font-family%3D%22sans-serif%22%20fill%3D%22%23fff%22%20text-anchor%3D%22middle%22%3ESOMBRA%3C/text%3E%3C/svg%3E"
+  }
+ ],
+ "scenes": {}
+}

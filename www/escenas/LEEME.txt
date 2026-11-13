@@ -1,0 +1,1 @@
+Pon aquí las imágenes de tus escenas (por ejemplo balcon.png) y regístralas en la sección scenes de www/skins.json
