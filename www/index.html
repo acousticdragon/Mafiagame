@@ -80,6 +80,8 @@ body.lo .scn *{animation:none!important}
 .frm.f6{box-shadow:inset 0 0 0 4px #c9d1d9,inset 0 0 8px #fff9}.frm.f7{box-shadow:inset 0 0 0 4px #e0115f,inset 0 0 10px #ff6a9a}.frm.f8{box-shadow:inset 0 0 0 4px #1fa971,inset 0 0 10px #7dffc0}
 .frm.f9{box-shadow:inset 0 0 0 4px #5b3cc4,inset 0 0 14px #b79cff;animation:gal 4s linear infinite}@keyframes gal{to{filter:hue-rotate(120deg)}}
 .frm.f10{border:4px dotted #ffd34d;box-sizing:border-box}.frm.f11{box-shadow:inset 0 0 0 3px #e0b020,inset 0 0 0 7px #0d0d11,inset 0 0 0 9px #e0b020}
+.ov{position:fixed;inset:0;z-index:90;background:rgba(0,0,0,.78);display:grid;place-items:center;padding:16px;overflow:auto}.ov.top{z-index:99}.ov.n{z-index:101}
+.ml{display:grid;gap:8px;text-align:left}.spk{display:inline-block;width:10px;height:10px;border-radius:50%;background:#2fb36b;margin-left:6px;vertical-align:middle;animation:pls 1s infinite alternate}.vcs{font-size:13px;margin:4px 0 8px;text-align:left}
 </style></head><body><div id="app"></div><button id="pz" class="pz" style="display:none" onclick="pauseM()">⏸</button>
 <script>
 const $=s=>document.querySelector(s),app=$("#app"),wait=ms=>new Promise(r=>setTimeout(r,ms));
@@ -169,11 +171,11 @@ const BASE=(window.LAN&&window.LAN.ips&&window.LAN.ips[0]&&/^(localhost|127\.)/.
 let P=[1,2,3,4].map(i=>({name:"Jugador "+i,av:"🙂"})),G=null,CB,ROOM=null,pend={},tidc=0,lock=Promise.resolve();
 
 /* ---------- menús ---------- */
-function menu(){if(G&&G.room)try{G.room.leave()}catch(e){}G=null;INGAME=0;wakeOff();closeP();voiceOff();scr(`<div class="cvw">${COVER()}</div><div><h1 class="logo">MAFIA</h1><p class="mut cap">Engaño y deducción</p></div>
+function menu(){byeRoom();G=null;INGAME=0;pzReset();wakeOff();closeP();voiceOff();MUTED.clear();scr(`<div class="cvw">${COVER()}</div><div><h1 class="logo">MAFIA</h1><p class="mut cap">Engaño y deducción</p></div>
 <button class="b p" onclick="onl()">Online<small>Crea una sala o entra con código o QR</small></button>
 <button class="b" onclick="setup()">Local<small>Un solo celular, turno por turno</small></button>
 <div class="two"><button class="b" onclick="skins()">Tienda</button><button class="b" onclick="opts()">Ajustes</button></div>
-<button class="b g" onclick="how()">Cómo se juega</button>${INSTB()}${DLB()}<p class="mut cap">🪙 ${S.coins} monedas</p>`)}
+<button class="b g" onclick="how()">Cómo se juega</button>${INSTB()}${DLB()}<button class="b g" onclick="quitApp()">⏻ Cerrar juego</button><p class="mut cap">🪙 ${S.coins} monedas</p>`)}
 function how(){scr(`${tb("Cómo se juega")}<div class="tg">🎭 Cada jugador recibe un rol secreto en su celular.</div><div class="tg">🌙 De noche, la mafia elige una víctima, el doctor protege y el detective investiga.</div><div class="tg">🗣️ De día se debate en voz alta y todos votan desde el celular.</div><div class="tg">🏆 Ganan los ciudadanos al eliminar a la mafia; gana la mafia al igualarlos en número.</div>`)}
 function skins(){const u=!S.photo;scr(`${tb("Tienda")}<p class="coin">🪙 ${S.coins}</p>${SNAV("s")}<div class="grid">${SK.map(([e,n,p],i)=>{const o=S.owned.includes(e),on=S.sel==e&&u;return `<button class="card ${on?"on":""}" onclick="pick(${i})"><div class="art">${e}</div><b>${n}</b><small class="mut">${on?"En uso":o?"Tuya":"🪙 "+p}</small></button>`}).join("")}${S.photo?`<button class="card on" onclick="skins()"><div class="art">${av(S.photo)}</div><b>Mi foto</b><small class="mut">En uso</small></button>`:""}${PACKH()}</div><div class="two"><button class="b" onclick="pickFile()">🖼️ Galería</button><button class="b" onclick="cam()">📷 Cámara</button></div>${S.photo?`<button class="b g" onclick="S.photo='';save();skins()">Quitar foto</button>`:""}<p class="mut">Ganas 🪙 jugando partidas.</p>`)}
 const PACKH=()=>{const u=!S.photo;return Object.values(PACK).map(x=>{const id="#"+x.id,o=S.owned.includes(id)||!x.price,on=S.sel==id&&u;return `<button class="card ${on?"on":""}" onclick="pickP('${esc(x.id)}')"><div class="art">${av(id)}</div><b>${esc(x.name)}</b><small class="mut">${on?"En uso":o?"Tuya":"🪙 "+x.price}</small></button>`}).join("")};
@@ -213,11 +215,11 @@ try{const pc=new RTCPeerConnection({iceServers:PO.config.iceServers});pc.createD
 const o2=$("#nt");if(!o2)return;o2.innerHTML=`${res.srflx?"✅":"❌"} Conexión directa (STUN)<br>${res.relay?"✅":"❌"} Servidor de relevo (TURN)<br><small>${res.relay?"Todo listo: debería funcionar entre redes distintas.":"Sin relevo: entre redes distintas puede fallar. Configura tu servidor TURN en config.json (mira el LEEME)."}</small>`}
 function netJoin(code,h,ctl){ctl=ctl||{};return new Promise((ok,fail)=>{const hs={},cbs=[];let pres={},pr={},conns=[],hc=null,myid=null,done=0;
 const bad=e=>{if(!done){done=1;try{peer.destroy()}catch(x){}fail(e)}};
-const fire=(t,d)=>(hs[t]||[]).forEach(f=>{try{f({topic:t,data:d})}catch(e){console.error(e)}});
+const fire=(t,d,fr)=>(hs[t]||[]).forEach(f=>{try{f({topic:t,data:d,from:fr})}catch(e){console.error(e)}});
 const list=()=>Object.keys(pr).map(id=>({peer:id,isMe:id==myid,presence:pr[id]}));
 const notify=()=>{const l=list();cbs.forEach(f=>f({peers:l}))};
 const sendAll=(m,t,d)=>conns.forEach(c=>{if(!c._ok)return;if(R.route&&t&&!R.route(t,d,c.peer))return;try{c.send(m)}catch(e){}});
-const R={get peer(){return peer},ids:()=>Object.keys(pr),emit:async(t,d)=>{if(h){fire(t,d);sendAll({k:"msg",t,d},t,d)}else if(hc&&hc.open)hc.send({k:"emit",t,d})},
+const R={get peer(){return peer},ids:()=>Object.keys(pr),emit:async(t,d)=>{if(h){fire(t,d,myid);sendAll({k:"msg",t,d},t,d)}else if(hc&&hc.open)hc.send({k:"emit",t,d})},
 on:(t,f)=>{(hs[t]=hs[t]||[]).push(f)},
 presence:async p=>{Object.assign(pres,p);if(h){pr[myid]=pres;sendAll({k:"peers",pr});notify()}else if(hc&&hc.open)hc.send({k:"pres",p:pres})},
 peers:()=>list(),onPeers:f=>{cbs.push(f)},leave:async()=>{try{peer.destroy()}catch(e){}}};
@@ -228,10 +230,10 @@ if(ctl.reg)ctl.reg(()=>bad(new Error("cancelado")));
 const peer=h?new Peer("mafia-"+code.toLowerCase(),PO):new Peer(PO);
 if(h)setTimeout(()=>{if(!done)bad(new Error("El servidor de conexión no responde"))},10000);
 peer.on("error",e=>{if(!done)bad(e);else toast("Problema de conexión")});
-peer.on("call",c=>{if(!G||!G.started||G.mode!="host")return;hostCall(c)});
+peer.on("call",c=>{if(!G||!G.started||G.mode!="host"){try{c.close()}catch(e){}return}hostCall(c)});
 peer.on("open",id=>{myid=id;
 if(h){pr[id]=pres;done=1;ok(R);peer.on("connection",c=>{conns.push(c);
-c.on("data",m=>{if(!c._ok){if(m&&m.k=="hello"&&!c._h){c._h=1;R.verdict(c,R.gate?R.gate(c,m):{r:"ok"})}return}if(m.k=="pres"){Object.keys(pr).forEach(k=>{if(k!=c.peer&&k!=myid&&pr[k]&&m.p.did&&pr[k].did==m.p.did){delete pr[k];const o=conns.find(x=>x.peer==k);if(o)try{o.send({k:"kick",ban:0,dup:1});setTimeout(()=>{try{o.close()}catch(e){}},300)}catch(e){}}});pr[c.peer]=m.p;sendAll({k:"peers",pr});notify()}else if(m.k=="emit"){fire(m.t,m.d);sendAll({k:"msg",t:m.t,d:m.d},m.t,m.d)}});
+c.on("data",m=>{if(!c._ok){if(m&&m.k=="hello"&&!c._h){c._h=1;R.verdict(c,R.gate?R.gate(c,m):{r:"ok"})}return}if(m.k=="pres"){Object.keys(pr).forEach(k=>{if(k!=c.peer&&k!=myid&&pr[k]&&m.p.did&&pr[k].did==m.p.did){delete pr[k];const o=conns.find(x=>x.peer==k);if(o)try{o.send({k:"kick",ban:0,dup:1});setTimeout(()=>{try{o.close()}catch(e){}},300)}catch(e){}}});pr[c.peer]=m.p;sendAll({k:"peers",pr});notify()}else if(m.k=="emit"&&GT[m.t]){fire(m.t,m.d,c.peer);sendAll({k:"msg",t:m.t,d:m.d},m.t,m.d)}});
 c.on("close",()=>{conns=conns.filter(x=>x!=c);delete pr[c.peer];if(R.onleave)R.onleave(c.peer);sendAll({k:"peers",pr});notify()});
 })}
 else{hc=peer.connect("mafia-"+code.toLowerCase(),{reliable:true});const to=setTimeout(()=>bad(new Error("timeout")),16000);
@@ -247,13 +249,13 @@ const m=txt.match(/#([A-Za-z]{4})$/)||txt.match(/^([A-Za-z]{4})$/);if(m){snd(880
 /* ---------- música, pausa, ajustes ---------- */
 let MUS=null,WL=null;
 function music(on){if(!on||!S.mus){if(MUS){const m=MUS;MUS=null;clearInterval(m.t);try{m.g.gain.setTargetAtTime(0,AC.currentTime,.3)}catch(e){}setTimeout(()=>{try{m.o.forEach(o=>o.stop())}catch(e){}},1500)}return}
-if(MUS||VOZ)return;try{const ctx=actx(),g=ctx.createGain();g.gain.value=0;g.connect(ctx.destination);
+if(MUS||vact())return;try{const ctx=actx(),g=ctx.createGain();g.gain.value=0;g.connect(ctx.destination);
 const tr=MTRK[S.mtr||0]||MTRK[0],o=tr.d.map(f=>{const x=ctx.createOscillator();x.type="sine";x.frequency.value=f;const v=ctx.createGain();v.gain.value=.5;x.connect(v);v.connect(g);x.start();return x});
 const sc=tr.sc;let k=0;
 const t=setInterval(()=>{if(!MUS||document.hidden)return;const x=ctx.createOscillator(),v=ctx.createGain();x.type="triangle";x.frequency.value=sc[k++%sc.length]*(Math.random()<.2?.5:1);v.gain.setValueAtTime(.0001,ctx.currentTime);v.gain.exponentialRampToValueAtTime(.35,ctx.currentTime+.05);v.gain.exponentialRampToValueAtTime(.0001,ctx.currentTime+1.6);x.connect(v);v.connect(g);x.start();x.stop(ctx.currentTime+1.7)},tr.ms);
 MUS={g,o,t};g.gain.setTargetAtTime(S.mus*.14,ctx.currentTime,1.2)}catch(e){}}
 function musv(){if(!S.mus)return music(0);if(MUS)MUS.g.gain.setTargetAtTime(S.mus*.14,AC.currentTime,.1);else music(1)}
-document.addEventListener("pointerdown",()=>{try{actx()}catch(e){}if(S.mus&&!MUS&&!VOZ)music(1)},{passive:true});
+document.addEventListener("pointerdown",()=>{try{actx()}catch(e){}if(S.mus&&!MUS&&!vact())music(1)},{passive:true});
 async function wake(){if(S.wake&&navigator.wakeLock&&!WL)try{WL=await navigator.wakeLock.request("screen");WL.addEventListener("release",()=>{WL=null})}catch(e){}}
 function wakeOff(){try{WL&&WL.release()}catch(e){}WL=null}
 document.addEventListener("visibilitychange",()=>{if(!document.hidden&&INGAME)wake()});
@@ -263,14 +265,14 @@ function pauseM(){if($("#pm"))return closeP();const m=document.createElement("di
 function closeP(){const m=$("#pm");if(m)m.remove()}
 function tg(k){S[k]=S[k]?0:1;save();pmDraw()}
 function pmDraw(){const m=$("#pm");if(!m)return;const one=G&&G.mine&&G.mine.length==1&&G.p[G.mine[0]].role,on=G&&G.mode!="local";
-m.innerHTML=`<div class="pc2"><h2>⏸ Pausa</h2>${on?`<p class="mut">Online: la partida sigue para los demás mientras estás aquí.</p>`:""}
+m.innerHTML=`<div class="pc2"><h2>⏸ Pausa</h2>${on?`<p class="mut">${G.mode=="host"?"Este menú no detiene la partida: usa «Pausar partida para todos».":"La partida sigue para los demás. Puedes pedirle una pausa al anfitrión."}</p>`:""}${on&&G.started?pzBtns():""}
 <div class="tg">🔊 Efectos${sld("vol","snd(660)")}</div><div class="tg">🎵 Música${sld("mus","musv()")}</div>
 <div class="two"><button class="b ${S.clk?"p":""}" onclick="tg('clk')">Sonido al tocar: ${S.clk?"sí":"no"}</button><button class="b ${S.vib?"p":""}" onclick="tg('vib')">Vibración: ${S.vib?"sí":"no"}</button></div>
 ${one?`<button class="b" onclick="peek()">👁️ Ver mi rol</button>`:""}${G&&G.mode=="host"?`<button class="b" onclick="roomMgr()">👥 Gestionar sala${G.req&&G.req.length?" ("+G.req.length+")":""}</button>`:""}<button class="b" onclick="pmHow()">❓ Cómo se juega</button><button class="b p" onclick="closeP()">Continuar</button>
-<button class="b g" id="ex" onclick="leave1()">Salir al menú principal</button></div>`}
+<button class="b g" id="ex" onclick="leave1()">🚪 Salir de la partida</button></div>`}
 function pmHow(){$("#pm").innerHTML=`<div class="pc2"><h2>Cómo se juega</h2><div class="tg">🌙 De noche actúan la mafia, el sanador, el detective y el vidente.</div><div class="tg">🗣️ De día se debate y todos votan a quién eliminar.</div><div class="tg">🏆 Los ciudadanos ganan al eliminar a la mafia; la mafia gana al igualarlos.</div><button class="b p" onclick="pmDraw()">Volver</button></div>`}
 function peek(){const r=R[G.p[G.mine[0]].role];$("#pm").innerHTML=`<div class="pc2"><div class="role"><div class="e">${r[0]}</div><h1>${r[1]}</h1><p>${r[2]}</p></div><button class="b p" onclick="pmDraw()">Ocultar</button></div>`}
-let LV=0;function leave1(){const b=$("#ex");if(!LV){LV=1;b.textContent=G&&G.mode=="host"?"Toca otra vez: la partida termina para todos":"Toca otra vez para salir";b.classList.add("p");setTimeout(()=>{LV=0;const e=$("#ex");if(e){e.textContent="Salir al menú principal";e.classList.remove("p")}},3500)}else{LV=0;closeP();menu()}}
+let LV=0;function leave1(){const b=$("#ex");if(!LV){LV=1;b.textContent=G&&G.mode=="host"?"Toca otra vez: la partida termina para todos":"Toca otra vez para salir de la partida";b.classList.add("p");setTimeout(()=>{LV=0;const e=$("#ex");if(e){e.textContent="🚪 Salir de la partida";e.classList.remove("p")}},3500)}else{LV=0;closeP();menu()}}
 let RS=0;function resetAll(){const b=$("#rs");if(!RS){RS=1;b.textContent="Toca otra vez para borrar todo";b.classList.add("p");setTimeout(()=>{RS=0},3500)}else{try{localStorage.removeItem("mafia2")}catch(e){}location.reload()}}
 function opts(){const t=(k,l)=>`<button class="b ${S[k]?"p":""}" onclick="S.${k}=S.${k}?0:1;save();opts()">${l}: ${S[k]?"sí":"no"}</button>`;
 scr(`${tb("Ajustes")}<div class="tg">🔊 Efectos${sld("vol","snd(660)")}</div><div class="tg">🎵 Música${sld("mus","musv()")}</div>
@@ -325,10 +327,10 @@ function react(e){if(Date.now()-RXT<600)return;RXT=Date.now();const al=G.mine.ma
 function floatR(d){if(!RXE.includes(d.e))return;const el=document.createElement("div");el.className="fr"+(d.g?" gh2":"");el.style.left=(6+Math.random()*76)+"%";el.innerHTML=`<span>${d.e}</span><small>${d.g?"👻 ":""}${esc(String(d.n).slice(0,10))}</small>`;document.body.appendChild(el);setTimeout(()=>el.remove(),2600)}
 /* ---------- fin de partida: revancha y compartir ---------- */
 const ENDH=d=>{const h=G.mode=="host",l=G.mode=="local";return `<button class="b p" onclick="shareRes()">📤 Compartir resultado</button>${l?`<button class="b" onclick="startLocal()">🔁 Jugar otra vez</button>`:h?`<button class="b" onclick="again()">🔁 Jugar otra vez (misma sala)</button>`:`<p class="mut">Esperando a que el anfitrión inicie otra partida…</p>`}<button class="b g" onclick="menu()">Volver al menú</button>`};
-function again(){if(!G||G.mode!="host")return;G.started=0;G.p=[];G.mine=[];G.chat=[];G.spec=0;G.seen={};G.lastPub=null;INGAME=0;pend={};G.room.emit("again",{}).catch(()=>{});drawLobby()}
-function hostLate(){G.seen=G.seen||{};roster().forEach(pe=>{const id=pe.peer;if(G.seen[id]||id==G.me)return;G.seen[id]=1;const did=pe.presence.did,mine=G.p.map((p,i)=>i).filter(i=>did&&G.p[i].did==did),snap=G.p.map(p=>({name:p.name,av:p.av,alive:p.alive?1:0,dev:p.dev,ti:p.ti}));
-if(mine.length){const od=new Set(mine.map(i=>G.p[i].dev));mine.forEach(i=>{G.p[i].dev=id;G.p[i].left=0});snap.forEach((s,i)=>{if(mine.includes(i))s.dev=id});G.room.emit("resume",{to:id,p:snap,mine,roles:Object.fromEntries(mine.map(i=>[i,G.p[i].role])),pub:G.lastPub||null}).catch(()=>{});Object.keys(pd).forEach(t=>{const e=pd[t];if(e&&od.has(e.dev)&&pend[t]){e.dev=id;e.msg.to=id;G.room.emit("t",e.msg).catch(()=>{})}});toast("Se reconectó "+G.p[mine[0]].name)}
-else{G.room.emit("resume",{to:id,spec:1,p:snap,mine:[],pub:G.lastPub||null}).catch(()=>{});toast("Alguien entró a mirar la partida")}})}
+function again(){if(!G||G.mode!="host")return;pzReset();G.over=0;G.started=0;G.p=[];G.mine=[];G.chat=[];G.spec=0;G.seen={};G.lastPub=null;INGAME=0;pend={};G.room.emit("again",{}).catch(()=>{});drawLobby()}
+function hostLate(){G.seen=G.seen||{};roster().forEach(pe=>{const id=pe.peer;if(G.seen[id]||id==G.me)return;G.seen[id]=1;const did=pe.presence.did,mine=G.p.map((p,i)=>i).filter(i=>did&&G.p[i].did==did),snap=G.p.map(p=>({name:p.name,av:p.av,alive:p.alive?1:0,dev:p.dev,ti:p.ti,did:p.did}));
+if(mine.length){const od=new Set(mine.map(i=>G.p[i].dev));mine.forEach(i=>{G.p[i].dev=id;G.p[i].left=0});snap.forEach((s,i)=>{if(mine.includes(i))s.dev=id});G.room.emit("resume",{to:id,p:snap,mine,roles:Object.fromEntries(mine.map(i=>[i,G.p[i].role])),pub:G.lastPub||null,pz:PZ.man?1:0}).catch(()=>{});Object.keys(pd).forEach(t=>{const e=pd[t];if(e&&od.has(e.dev)&&pend[t]){e.dev=id;e.msg.to=id;G.room.emit("t",e.msg).catch(()=>{})}});od.forEach(lvBack);toast("Se reconectó "+G.p[mine[0]].name)}
+else{G.room.emit("resume",{to:id,spec:1,p:snap,mine:[],pub:G.lastPub||null,pz:PZ.man?1:0}).catch(()=>{});toast("Alguien entró a mirar la partida")}})}
 async function retry(c,n){if(G)return;await lobby(c);if(!G){if(n<6)setTimeout(()=>retry(c,n+1),2500);else{toast("No se pudo reconectar");menu()}}}
 const avImg=a=>new Promise(res=>{a=String(a||"").split("~")[0];let src=null;if(/^@/.test(a||""))src="data:image/svg+xml;utf8,"+encodeURIComponent(chr(a));else if(/^data:image/.test(a||""))src=a;else if(a&&a[0]=="#"&&PACK[a.slice(1)])src=PACK[a.slice(1)].img;if(!src)return res(null);const i=new Image();i.onload=()=>res(i);i.onerror=()=>res(null);i.src=src});
 const wrapT=(x,t,w)=>{const o=[];let l="";t.split(" ").forEach(wd=>{const s=l?l+" "+wd:wd;if(x.measureText(s).width>w&&l){o.push(l);l=wd}else l=s});if(l)o.push(l);return o};
@@ -388,7 +390,7 @@ function reqNote(){toast("🔔 "+G.req[G.req.length-1].name+" quiere entrar");if
 function reqAns(id,yes){const i=G.req.findIndex(x=>x.id==id);if(i<0)return;const q=G.req.splice(i,1)[0];if(yes&&q.did)G.okdid[q.did]=1;G.room.admit(q.c,yes);if(!G.started)drawLobby();else if($("#pm"))roomMgr()}
 function kickAsk(id){const pe=G.peers.find(p=>p.peer==id);if(!pe)return;let m=$("#pm");if(!m){m=document.createElement("div");m.id="pm";m.className="pm";document.body.appendChild(m)}
 m.innerHTML=`<div class="pc2"><h2>Expulsar a ${esc(((pe.presence.ps||[])[0]||{}).n||"Jugador")}</h2><button class="b" data-i="${esc(id)}" onclick="kick(this.dataset.i,0)">Expulsar</button><button class="b p" data-i="${esc(id)}" onclick="kick(this.dataset.i,1)">Expulsar y bloquear</button><button class="b g" onclick="closeP()">Cancelar</button></div>`}
-function kick(id,ban){const pe=G.peers.find(p=>p.peer==id),did=pe&&pe.presence&&pe.presence.did;if(did){if(ban)G.ban[did]=1;delete G.okdid[did]}G.room.kick(id,ban);closeP();toast(ban?"Jugador expulsado y bloqueado":"Jugador expulsado")}
+function kick(id,ban){const pe=G.peers.find(p=>p.peer==id),did=pe&&pe.presence&&pe.presence.did;if(did){if(ban)G.ban[did]=1;delete G.okdid[did]}G.bye=G.bye||{};G.bye[id]=1;G.room.kick(id,ban);closeP();toast(ban?"Jugador expulsado y bloqueado":"Jugador expulsado")}
 function roomMgr(){const m=$("#pm");if(!m)return;const rq=G.req.map(q=>`<div class="pc"><span>${esc(q.name)}</span><button class="b p" style="width:auto;padding:6px 12px;margin-left:auto" data-i="${esc(q.id)}" onclick="reqAns(this.dataset.i,1)">✔</button><button class="b" style="width:auto;padding:6px 12px" data-i="${esc(q.id)}" onclick="reqAns(this.dataset.i,0)">✕</button></div>`).join("")||`<p class="mut">Sin solicitudes.</p>`,
 pl=roster().filter(p=>p.peer!=G.me).map(p=>`<div class="pc"><span>${esc(((p.presence.ps||[])[0]||{}).n||"?")}</span><button class="b" style="width:auto;padding:6px 12px;margin-left:auto" data-i="${esc(p.peer)}" onclick="kickAsk(this.dataset.i)">Expulsar</button></div>`).join("");
 m.innerHTML=`<div class="pc2"><h2>👥 Gestionar sala</h2><b>Solicitudes</b>${rq}<b>Jugadores</b>${pl||`<p class="mut">Nadie más.</p>`}<button class="b p" onclick="pmDraw()">Volver</button></div>`}
@@ -403,18 +405,18 @@ scr(`${tb("Online")}<div class="av xl">${av(ME())}</div>${LANH()}<input type="te
 let JOINING=0;
 async function lobby(c,pw){if(JOINING||(G&&G.room))return;JOINING=1;const h=c===undefined;c=h?CODE():c.toUpperCase().trim();if(c.length!=4){JOINING=0;return toast("El código tiene 4 letras")}S.name=(S.name||"").trim()||"Jugador";save();
 try{toast(h?"Creando sala…":"Entrando…");await ICEP;let r;for(let n=0;n<4;n++){try{r=await netJoin(c,h,{pw:pw||"",onwait:()=>scr(WAITH()),reg:f=>{JABORT=f}});break}catch(e){if(!h||n==3||e.type!="unavailable-id")throw e;c=CODE()}}G={mode:h?"host":"guest",room:r,code:c,p:[],peers:[],cfg:{m:0,d:60,n:1,r:{det:1,vid:0,san:1,caz:0}},ps:[{n:S.name,a:ME(),t:TT()}],seen:{},opts:ROPT,req:[],okdid:{},ban:{}};if(!h){S.last={code:c,t:Date.now()};save()}
-r.on("resume",m=>{const d=m.data,me=(G&&G.peers.find(p=>p.isMe)||{}).peer;if(!G||G.mode!="guest"||!d||d.to!=me)return;G.p=d.p.map(x=>({name:String(x.name),av:String(x.av),alive:x.alive,dev:x.dev,ti:x.ti}));G.me=me;G.mine=d.mine||[];G.spec=d.spec?1:0;Object.entries(d.roles||{}).forEach(([i,rr])=>{if(G.p[i])G.p[i].role=rr});G.started=1;INGAME=1;wake();if(d.pub)drawPub(d.pub,0);else scr(G.spec?`<h2>👀 Mirando</h2><p class="mut">Verás las pantallas públicas. Entrarás en la próxima partida.</p>`:WAIT)});
-r.on("again",()=>{if(!G||G.mode!="guest")return;G.started=0;G.p=[];G.mine=[];G.chat=[];G.spec=0;INGAME=0;drawLobby()});
+r.on("resume",m=>{const d=m.data,me=(G&&G.peers.find(p=>p.isMe)||{}).peer;if(!G||G.mode!="guest"||!d||d.to!=me)return;G.p=d.p.map(x=>({name:String(x.name),av:String(x.av),alive:x.alive,dev:x.dev,ti:x.ti,did:x.did}));G.me=me;G.mine=d.mine||[];G.spec=d.spec?1:0;Object.entries(d.roles||{}).forEach(([i,rr])=>{if(G.p[i])G.p[i].role=rr});G.started=1;INGAME=1;wake();PZ.man=d.pz?1:0;pzApply();if(d.pub)drawPub(d.pub,0);else scr(G.spec?`<h2>👀 Mirando</h2><p class="mut">Verás las pantallas públicas. Entrarás en la próxima partida.</p>`:WAIT)});
+r.on("again",()=>{if(!G||G.mode!="guest")return;pzReset();G.started=0;G.p=[];G.mine=[];G.chat=[];G.spec=0;INGAME=0;drawLobby()});
 r.on("react",m=>{const d=m.data;if(!d||!d.e)return;if(d.g){const l=(G&&G.mine)||[];if(!l.length||l.some(j=>G.p[j].alive))return}floatR(d)});
 r.on("start",m=>{if(G&&G.mode=="guest"&&!G.started&&m.data&&m.data.ids){const mp={};flat().forEach(p=>mp[p.id]=p);G.me=(G.peers.find(p=>p.isMe)||{}).peer;G.p=m.data.ids.map(id=>mp[id]||{id,dev:"?",name:"?",av:"🙂",alive:1});G.spec=0;G.tc=0;G.mine=G.p.map((p,i)=>i).filter(i=>G.p[i].dev==G.me);G.started=1;INGAME=1;wake();scr(WAIT)}});
 r.on("t",m=>{const d=m.data;if(!G||G.mode!="guest"||!G.started||!d||d.to!=G.me)return;ui(()=>new Promise(res=>{const f=()=>show(d,v=>{r.emit("a",{tid:d.tid,v}).catch(()=>{});scr(WAIT,d.night);res()},d.pi);G.mine.length>1?gate(d.pi,f,d.night):f()}))});
 r.on("pub",m=>{const d=m.data;if(!G||G.mode!="guest"||!G.started||!d)return;G.p.forEach((p,i)=>p.alive=d.al[i]);drawPub(d,0);if(d.end&&d.roles&&G.mine&&G.mine.length)reward(d.roles)});
 r.on("prog",m=>{const e=$("#pg");if(e&&m.data)e.textContent=`Faltan ${m.data.l} de ${m.data.t}`});
-r.on("chat",m=>{if(!G||!m.data)return;if(m.data.g&&G.mine&&G.mine.some(j=>G.p[j].alive))return;G.chat=G.chat||[];G.chat.push({n:String(m.data.n).slice(0,14),t:String(m.data.t).slice(0,140),g:m.data.g?1:0});addChat()});
-r.route=(t,d,id)=>{if(t=="a")return false;if(t=="t"||t=="resume")return !!d&&d.to==id;if(t=="chat"||t=="react"){if(!d||!d.g)return true;const l=G.p.filter(p=>p.dev==id);return l.length>0&&!l.some(p=>p.alive)}return true};
-if(h)r.onleave=id=>{if(G&&G.req){const n0=G.req.length;G.req=G.req.filter(x=>x.id!=id);if(G.req.length!=n0&&!G.started)drawLobby()}if(!G||!G.started)return;G.p.forEach(p=>{if(p.dev==id){p.left=1}});setTimeout(()=>{Object.keys(pd).forEach(t=>{if(pd[t]&&pd[t].dev==id&&pend[t]){pend[t](pd[t].def());delete pend[t];delete pd[t]}})},6000);if(G.p.some(p=>p.dev==id))toast("Alguien salió: sus jugadores siguen en automático (6 s para volver)")};
+r.on("chat",m=>{if(!G||!m.data)return;if(m.data.d&&MUTED.has(m.data.d))return;if(m.data.g&&G.mine&&G.mine.some(j=>G.p[j].alive))return;G.chat=G.chat||[];G.chat.push({n:String(m.data.n).slice(0,14),t:String(m.data.t).slice(0,140),g:m.data.g?1:0});addChat()});
+r.route=(t,d,id)=>{if(t=="a"||t=="bye"||t=="lva"||t=="vm"||t=="preq")return false;if(t=="t"||t=="resume"||t=="lvn")return !!d&&d.to==id;if(t=="chat"||t=="react"){if(!d||!d.g)return true;const l=G.p.filter(p=>p.dev==id);return l.length>0&&!l.some(p=>p.alive)}return true};
+roomExtras(r,h);if(h)r.onleave=id=>{if(G&&G.req){const n0=G.req.length;G.req=G.req.filter(x=>x.id!=id);if(G.req.length!=n0&&!G.started)drawLobby()}if(!G||!G.started||G.over)return;if(!G.p.some(p=>p.dev==id))return;G.p.forEach(p=>{if(p.dev==id)p.left=1});lvAdd(id)};
 r.on("a",m=>{const d=m.data;if(G&&G.mode=="host"&&d&&pend[d.tid]){pend[d.tid](d.v);delete pend[d.tid]}});
-if(!h)r.onlost=()=>{if(!G||G.room!==r)return;const c0=G.code;try{r.leave()}catch(e){}G=null;INGAME=0;toast("Reconectando…");setTimeout(()=>retry(c0,0),1200)};
+if(!h)r.onlost=()=>{if(!G||G.room!==r)return;if(G.ended){try{r.leave()}catch(e){}menu();toast("El anfitrión cerró la sala");return}const c0=G.code;try{r.leave()}catch(e){}G=null;INGAME=0;pzReset();voiceOff();toast("Reconectando…");setTimeout(()=>retry(c0,0),1200)};
 if(h){r.gate=(c,m)=>{const O=G.opts,did=String(m.did||"");if(did&&G.ban[did])return{r:"deny",w:"ban"};if(did&&(G.okdid[did]||(G.started&&G.p.some(p=>p.did==did))))return{r:"ok"};
 const n=G.started?G.p.length:roster().reduce((a,p)=>a+p.presence.ps.length,0);if(G.started?n>=40:n>=O.max)return{r:"deny",w:"full"};
 if(O.pw&&String(m.pw||"")!==O.pw)return{r:"deny",w:"pw"};
@@ -435,7 +437,7 @@ scr(`${tb("Sala")}<p class="mut cap">Código de sala</p><div class="code">${G.co
 ${h?`${OPTH()}<div class="tg"><b>Mafiosos</b><div class="seg">${sg("m",0,"Auto")}${sg("m",1,"1")}${sg("m",2,"2")}${sg("m",3,"3")}</div><b style="display:block;margin-top:12px">Debate</b><div class="seg">${sg("d",30,"30 s")}${sg("d",60,"60 s")}${sg("d",90,"90 s")}</div><b style="display:block;margin-top:12px">Roles especiales</b>${ROLEH()}${NARH()}</div><button class="b p" ${pl.length<4?"disabled":""} onclick="go()">Empezar</button>`:`<p class="mut">Esperando a que el anfitrión empiece…</p>`}`);
 if(h&&!window.QRCode&&window.LAN){const q=$("#qr");q.style.display="block";q.innerHTML=`<img src="/qr.svg?u=${encodeURIComponent(BASE+G.code)}" width="164" height="164" alt="QR">`}
 if(h&&window.QRCode){const q=$("#qr");q.style.display="block";new QRCode(q,{text:BASE+G.code,width:150,height:150})}}
-async function go(){const l=flat();if(l.length<4)return toast("Mínimo 4 jugadores");if(l.length>G.opts.max)return toast("Hay más de "+G.opts.max+" jugadores: sube el máximo o expulsa a alguien");G.started=1;G.tc=0;G.spec=0;G.chat=[];G.lastPub=null;G.seen={};G.peers.forEach(p=>G.seen[p.peer]=1);G.me=(G.peers.find(p=>p.isMe)||{}).peer;G.p=l;G.mine=G.p.map((p,i)=>i).filter(i=>G.p[i].dev==G.me);await G.room.emit("start",{ids:G.p.map(p=>p.id)}).catch(()=>{});await wait(1000);run()}
+async function go(){const l=flat();if(l.length<4)return toast("Mínimo 4 jugadores");if(l.length>G.opts.max)return toast("Hay más de "+G.opts.max+" jugadores: sube el máximo o expulsa a alguien");G.started=1;G.over=0;G.bye={};pzReset();G.tc=0;G.spec=0;G.chat=[];G.lastPub=null;G.seen={};G.peers.forEach(p=>G.seen[p.peer]=1);G.me=(G.peers.find(p=>p.isMe)||{}).peer;G.p=l;G.mine=G.p.map((p,i)=>i).filter(i=>G.p[i].dev==G.me);await G.room.emit("start",{ids:G.p.map(p=>p.id)}).catch(()=>{});await wait(1000);run()}
 
 /* ---------- pantallas de juego ---------- */
 function gate(i,cb,n){CB=cb;const p=G.p[i];scr(`<div class="av xl">${av(p.av)}</div><p class="mut">Pasa el celular a</p><h1>${esc(p.name)}</h1><button class="b p" onclick="CB()">Soy yo</button>`,n)}
@@ -443,24 +445,24 @@ function show(t,res,i){voiceOff();CB=res;if(t.k=="pick")vib(80);if(t.k=="role"){
 else if(t.k=="pick")scr(`<h2>${t.title}</h2>${t.opts.map(j=>`<button class="b pk" onclick="CB(${j})"><span class="av sm">${av(G.p[j].av)}</span>${esc(G.p[j].name)}</button>`).join("")}${t.skip?`<button class="b g" onclick="CB(-1)">Abstenerme</button>`:""}`,t.night);
 else scr(`<div class="role"><div class="e">${t.e}</div><h1>${esc(t.t)}</h1><p class="mut">${esc(t.s)}</p></div><button class="b p" onclick="CB()">Continuar</button>`,t.night)}
 function reveal(role,m){vib([60,40,60]);const r=R[role];snd(300,.3);scr(`<div class="role"><div class="e">${r[0]}</div><h1>${r[1]}</h1><p>${r[2]}</p>${role=="mafia"?`<p class="mut">${m?"Tus cómplices: <b>"+m+"</b>":"Eres el único mafioso."}</p>`:""}</div><button class="b p" onclick="CB()">Ocultar y continuar</button>`)}
-function drawPub(d,btn){if(!d.chat)voiceOff();if(d.chat&&G.cr!=d.rid){G.cr=d.rid;G.chat=[]}if(d.end)G.endData=d;
+function drawPub(d,btn){if(!d.chat)voiceOff();VD=d.chat?1:0;if(d.chat&&G.cr!=d.rid){G.cr=d.rid;G.chat=[]}if(d.end)G.endData=d;
 scr(`${d.sc?`<div class="scn" id="sc"></div>`:""}<h1>${esc(d.t)}</h1><p class="mut">${esc(d.s)}</p>${d.rem?`<p class="coin" id="tm"></p>`:""}<div class="pl">${G.p.map((p,i)=>`<div class="pc ${d.al[i]?"":"dead"}"><div class="av sm">${av(p.av)}</div><span>${esc(p.name)}${p.ti?` <small class="mut">· ${esc(p.ti)}</small>`:""}</span>${d.roles?`<small>${R[d.roles[i]][0]} ${R[d.roles[i]][1]}</small>`:""}</div>`).join("")}</div>${d.story&&d.story.length?`<div class="tg"><b>📜 Crónica de la ciudad</b>${d.story.map(x=>`<p style="margin:8px 0">${esc(x)}</p>`).join("")}</div>`:""}${d.task&&!G.spec?`<div id="tk" class="tg"></div>`:""}${d.chat?CHATH():""}${RXH(d)}${d.end?ENDH(d):btn?`<button class="b p" onclick="CB()">${d.chat?"Pasar a la votación":"Continuar"}</button>`:""}`,d.night);
-if(d.sc)playScene(d.sc);if(d.chat){addChat();vui()}if(d.rem)tick(d.rem)}
+if(d.sc)playScene(d.sc);if(d.chat){addChat();vui();vauto()}if(d.rem)tick(d.rem)}
 
 /* ---------- motor ---------- */
-const pd={},dflt=tk=>tk.opts?(tk.skip?-1:tk.opts[Math.random()*tk.opts.length|0]):undefined;
+const pd={},dflt=tk=>tk.opts?(tk.skip?-1:tk.opts[Math.random()*tk.opts.length|0]):undefined,dfltL=tk=>tk.opts?-1:undefined;
 const ui=fn=>{const p=lock.then(fn);lock=p.catch(()=>{});return p};
 function ask(i,task,fu){const pl=G.p[i];
 if(pl.dev==G.me){const gt=G.mine.length>1;return ui(()=>new Promise(res=>{const fin=v=>{if(G.mode!="local")scr(WAIT,task.night);res(v)},f=()=>show(task,v=>{if(fu){snd(300);show(fu(v),()=>fin(v),i)}else fin(v)},i);gt?gate(i,f,task.night):f()}))}
-const rem=tk=>new Promise(res=>{if(pl.left){res(dflt(tk));return}const tid=++tidc;pend[tid]=res;const msg={to:pl.dev,pi:i,tid,...tk};pd[tid]={dev:pl.dev,def:()=>dflt(tk),msg};G.room.emit("t",msg).catch(()=>{});setTimeout(()=>{if(pend[tid]){pend[tid](dflt(tk));delete pend[tid];delete pd[tid]}},120000)});
-return rem(task).then(async v=>{if(fu)await rem(fu(v));return v})}
-function pub(t,s,night,ms,ex){const d={t,s,night,al:G.p.map(p=>p.alive?1:0),...ex};G.lastPub=d;if(G.mode=="host")G.room.emit("pub",d).catch(()=>{});
+const rem=async tk=>{await hold();return new Promise(res=>{if(pl.left){res(dfltL(tk));return}const tid=++tidc;pend[tid]=res;const msg={to:pl.dev,pi:i,tid,...tk};pd[tid]={dev:pl.dev,def:()=>dflt(tk),defL:()=>dfltL(tk),msg};G.room.emit("t",msg).catch(()=>{});ptm(()=>{if(pend[tid]){pend[tid](dflt(tk));delete pend[tid];delete pd[tid]}},120000)})};
+return rem(task).then(async v=>{if(fu&&v>=0)await rem(fu(v));return v})}
+async function pub(t,s,night,ms,ex){await hold();const d={t,s,night,al:G.p.map(p=>p.alive?1:0),...ex};G.lastPub=d;if(G.mode=="host")G.room.emit("pub",d).catch(()=>{});
 if(d.end){drawPub(d,0);return new Promise(()=>{})}
-return ui(()=>new Promise(res=>{let k=0;const f=()=>{if(!k){k=1;res()}};CB=f;drawPub(d,1);if(G.mode!="local"&&ms)setTimeout(f,ms)}))}
+return ui(()=>new Promise(res=>{let k=0;const f=()=>{if(!k){k=1;res()}};CB=f;drawPub(d,1);if(G.mode!="local"&&ms)ptm(f,ms)}))}
 function reward(r){const m=G.p.filter((p,i)=>p.alive&&r[i]=="mafia").length,won=G.mine.some(i=>(r[i]=="mafia")==(m>0)),g=20+(won?20:0);S.coins+=g;save();toast("+"+g+" 🪙")}
 const idx=()=>G.p.map((p,i)=>i).filter(i=>G.p[i].alive);
-function prog(ps){let l=ps.length;const t=l,u=()=>{if(G.mode=="host")G.room.emit("prog",{l,t}).catch(()=>{});const e=$("#pg");if(e)e.textContent=`Faltan ${l} de ${t}`};ps.forEach(p=>p.then(()=>{l--;u()}));return Promise.all(ps)}
-function chk(){const m=G.p.filter(p=>p.alive&&p.role=="mafia").length,o=G.p.filter(p=>p.alive&&p.role!="mafia").length;if(m&&m<o)return 0;snd(m?200:700,.8);reward(G.p.map(p=>p.role));pub(m?"Gana la mafia":"Ganan los ciudadanos","Roles revelados",0,0,{roles:G.p.map(p=>p.role),end:1,story:G.story||[]});return 1}
+function prog(ps){let l=ps.length,t=l;const u=()=>{if(G.mode=="host")G.room.emit("prog",{l,t}).catch(()=>{});const e=$("#pg");if(e)e.textContent=`Faltan ${l} de ${t}`},w=p=>p.then(()=>{l--;u()});ps.forEach(w);ps.add=p=>{ps.push(p);l++;t++;w(p);u()};return (async()=>{let k=0;while(k<ps.length){const c=ps.slice(k);k=ps.length;await Promise.all(c)}return Promise.all(ps)})()}
+function chk(){const m=G.p.filter(p=>p.alive&&p.role=="mafia").length,o=G.p.filter(p=>p.alive&&p.role!="mafia").length;if(m&&m<o)return 0;G.over=1;snd(m?200:700,.8);reward(G.p.map(p=>p.role));pub(m?"Gana la mafia":"Ganan los ciudadanos","Roles revelados",0,0,{roles:G.p.map(p=>p.role),end:1,story:G.story||[]});return 1}
 const LC={m:0,d:60,n:1,r:{det:1,vid:0,san:1,caz:0}};
 const ROLEH=()=>{const C=G&&G.cfg||LC;return `<div class="seg" style="flex-wrap:wrap">${[["det","🔍 Detective"],["vid","🔮 Vidente"],["san","💉 Sanador"],["caz","🏹 Cazador"]].map(([k,t])=>`<button class="b ${C.r[k]?"p":""}" style="width:auto;flex:1 1 40%" onclick="tgR('${k}')">${t}</button>`).join("")}</div>`};
 function tgR(k){const C=G&&G.cfg||LC;C.r[k]=C.r[k]?0:1;G&&G.room?drawLobby():setup()}
@@ -553,43 +555,99 @@ function tgN(v){const C=G&&G.cfg||LC;C.n=v;G&&G.room?drawLobby():setup()}
 const dead=()=>G.mine.length>0&&!G.mine.some(j=>G.p[j].alive);
 const CHATH=()=>G.spec?`<div class="tg"><p class="mut" style="margin:0 0 6px;text-align:left">👀 Estás mirando: entrarás en la próxima partida.</p><div id="ch" class="chat"></div></div>`:`<div class="tg"><p class="mut" style="margin:0 0 6px;text-align:left">${dead()?"👻 Eres un espíritu: ves el chat de todos, pero tus mensajes solo los leen los muertos.":"💬 Chat de texto"}</p><div id="ch" class="chat"></div><div class="row" style="margin-top:8px"><input type="text" id="ci" maxlength="140" placeholder="${dead()?"Mensaje para los muertos":"Mensaje de texto"}" onkeydown="if(event.key=='Enter')sendChat()"><button class="b p" style="width:auto" onclick="sendChat()">➤</button></div></div><div class="tg"><p class="mut" style="margin:0 0 8px;text-align:left">${dead()?"👻 Voz de los muertos: solo se oyen entre ustedes":"🗣️ Voz de los vivos"}</p><div id="vc"></div></div>`;
 function addChat(){const e=$("#ch");if(!e||!G.chat)return;e.innerHTML=G.chat.map(m=>`<p class="${m.g?"gh":""}"><b>${m.g?"👻 ":""}${esc(m.n)}:</b> ${esc(m.t)}</p>`).join("");e.scrollTop=1e9}
-function sendChat(){if(G.spec||!G.mine.length)return;const i=$("#ci"),t=i.value.trim();if(!t)return;const al=G.mine.map(j=>G.p[j]).find(p=>p.alive),me=al||G.p[G.mine[0]];i.value="";G.room.emit("chat",{n:me.name,t,g:al?0:1}).catch(()=>{})}
-function tick(ms){const end=Date.now()+ms,f=()=>{const e=$("#tm");if(!e)return;const s=Math.max(0,Math.ceil((end-Date.now())/1000));e.textContent="⏱ "+s+" s";if(s>0)setTimeout(f,500)};f()}
-/* voz: todos hablan con el anfitrión, que mezcla (vivos por un lado, muertos por otro) */
-let VOZ=null,VC=[],VM={src:{},dest:{},chan:{}};
-const actx=()=>{AC=AC||new(window.AudioContext||window.webkitAudioContext)();if(AC.state=="suspended")AC.resume();return AC};
+function sendChat(){if(G.spec||!G.mine.length)return;const i=$("#ci"),t=i.value.trim();if(!t)return;const al=G.mine.map(j=>G.p[j]).find(p=>p.alive),me=al||G.p[G.mine[0]];i.value="";G.room.emit("chat",{n:me.name,t,g:al?0:1,d:S.did}).catch(()=>{})}
+function tick(ms){const gen=++TG;TM={end:Date.now()+ms,left:ms,p:pzOn()?1:0};const f=()=>{if(gen!=TG)return;const e=$("#tm");if(!e||!TM)return;if(TM.p){e.textContent="⏸ En pausa";setTimeout(f,500);return}const s=Math.max(0,Math.ceil((TM.end-Date.now())/1000));e.textContent="⏱ "+s+" s";if(s>0)setTimeout(f,500)};f()}
+/* voz: todos hablan con el anfitrión, que mezcla para cada oyente (vivos y muertos por separado, sin los silenciados) */
+let VOZ=null,VC=[],VM={src:{},dest:{},chan:{},an:{},el:{},call:{},md:{}},VG={},VSP="",VTM=null,VS={st:"",talk:0,silent:0},VT=0,VD=0,SIL=null,MUTED=new Set();
+const vact=()=>!!(VOZ||VS.st);
+const actx=()=>{AC=AC||new(window.AudioContext||window.webkitAudioContext)();if(AC.state!="running")AC.resume().catch(()=>{});return AC};
+["click","touchend","keydown","visibilitychange"].forEach(ev=>document.addEventListener(ev,()=>{try{if(AC&&AC.state!="running"&&!document.hidden)AC.resume().catch(()=>{})}catch(e){}},{passive:true}));
 const chanOf=d=>G.p.some(p=>p.dev==d&&p.alive)?1:0;
-function vui(){const e=$("#vc");if(!e)return;e.innerHTML=VOZ?`<button class="b" onclick="voiceMute()">${VOZ.getAudioTracks()[0].enabled?"🔇 Silenciar mi micrófono":"🎙️ Micrófono en silencio · toca para hablar"}</button>`:`<div class="two"><button class="b" onclick="voiceTog(1)">🎙️ Hablar</button><button class="b" onclick="voiceTog(0)">🔊 Solo escuchar</button></div>`}
-function voiceMute(){const t=VOZ&&VOZ.getAudioTracks()[0];if(t){t.enabled=!t.enabled;vui()}}
-async function voiceTog(talk){if(window.LAN)return toast("La voz necesita internet: no está disponible en el modo Wi-Fi local");try{VOZ=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true,autoGainControl:true}})}catch(e){return toast("No se pudo abrir el micrófono: revisa el permiso del navegador")}
-VOZ.getAudioTracks()[0].enabled=!!talk;music(0);const rm=G.room;
-if(G.mode=="host"){const ctx=actx(),s=ctx.createMediaStreamSource(VOZ);VM.src[G.me]=s;VM.chan[G.me]=chanOf(G.me);Object.keys(VM.dest).forEach(id=>{if(VM.chan[id]==VM.chan[G.me])s.connect(VM.dest[id])})}
-else{const hid=(G.peers.find(p=>p.presence&&p.presence.host)||{}).peer;if(!hid||!rm.peer){voiceOff();return toast("No se encontró al anfitrión")}
-actx();const c=rm.peer.call(hid,VOZ);VC.push(c);c.on("stream",st=>playV("mix",st));c.on("error",()=>toast("Falló la conexión de voz"))}
+const MIC={audio:{echoCancellation:true,noiseSuppression:true,autoGainControl:true}};
+function silentStream(){if(SIL&&SIL.active)return SIL;const ctx=actx(),d=ctx.createMediaStreamDestination(),o=ctx.createOscillator(),g=ctx.createGain();g.gain.value=0;o.connect(g);g.connect(d);o.start();return SIL=d.stream}
+function vaudio(){let a=document.getElementById("a_mix");if(!a){a=document.createElement("audio");a.id="a_mix";a.autoplay=true;a.setAttribute("playsinline","");document.body.appendChild(a)}return a}
+function vunlock(){actx();const a=vaudio();try{if(!a.srcObject)a.srcObject=silentStream();const p=a.play();if(p&&p.catch)p.catch(()=>{})}catch(e){}}
+const MUTEB=()=>`<button class="b g" onclick="muteUI()">🔇 Silenciar jugadores${MUTED.size?" ("+MUTED.size+")":""}</button>`;
+function vui(){const e=$("#vc");if(!e)return;
+if(!VS.st){e.innerHTML=`<div class="two"><button class="b" onclick="voiceTog(1)">🎙️ Hablar</button><button class="b" onclick="voiceTog(0)">🔊 Solo escuchar</button></div>${MUTEB()}`;return}
+const tr=VOZ&&!VS.silent&&VOZ.getAudioTracks()[0],on=VS.st=="on";
+const mic=tr?`<button class="b" onclick="voiceMute()">${tr.enabled?"🔇 Silenciar mi micrófono":"🎙️ Micrófono en silencio · toca para hablar"}</button>`:`<button class="b" onclick="voiceMute()">🎙️ Activar mi micrófono</button>`;
+e.innerHTML=`<p class="vcs">${VS.st=="conn"?"⏳ Conectando la voz…":VS.st=="fail"?"⚠️ Sin conexión de voz":"✅ Voz conectada"}</p>${mic}<p class="vcs mut" id="vsp"></p>${MUTEB()}${VS.st=="fail"?`<button class="b" onclick="voiceRetry()">↻ Reintentar</button>`:""}<button class="b g" onclick="voiceLeave()">Salir de la voz</button>`;vsShow()}
+function voiceLeave(){if(G)G.vauto=0;voiceOff();VD=1;vui()}
+function voiceRetry(){const t=VS.talk;voiceOff();VD=1;voiceTog(t)}
+function voiceMute(){if(!VOZ||VS.silent)return micUp();const t=VOZ.getAudioTracks()[0];if(t){t.enabled=!t.enabled;G.vauto=t.enabled?1:2;vui()}}
+function sendMute(){if(G&&G.mode=="guest"&&G.room)G.room.emit("vm",{l:[...MUTED]}).catch(()=>{})}
+function vgClear(id){Object.keys(VG).forEach(k=>{if(k.startsWith(id+">")||k.endsWith(">"+id)){try{VG[k].disconnect()}catch(e){}delete VG[k]}})}
+function vsrc(id,st){const ctx=actx();try{VM.src[id]&&VM.src[id].disconnect()}catch(e){}vgClear(id+">");const s=ctx.createMediaStreamSource(st),an=ctx.createAnalyser();an.fftSize=512;s.connect(an);VM.src[id]=s;VM.an[id]=an}
+async function micUp(){let st;try{st=await navigator.mediaDevices.getUserMedia(MIC)}catch(e){return toast("No se pudo abrir el micrófono: revisa el permiso del navegador")}
+if(!vact()){st.getTracks().forEach(t=>t.stop());return}
+const t=st.getAudioTracks()[0];
+if(G.mode=="host"){vhostInit();vsrc(G.me,st);vall()}
+else VC.forEach(c=>{try{const ss=c.peerConnection.getSenders(),sd=ss.find(x=>x.track&&x.track.kind=="audio")||ss[0];if(sd)sd.replaceTrack(t)}catch(e){}});
+if(VOZ&&!VS.silent)VOZ.getTracks().forEach(x=>x.stop());VOZ=st;VS.silent=0;VS.talk=1;G.vauto=1;vui()}
+async function voiceTog(talk){if(window.LAN)return toast("La voz necesita internet: no está disponible en el modo Wi-Fi local");if(!G||!G.started||vact())return;
+vunlock();const tk=++VT;VS={st:"conn",talk:!!talk,silent:0};G.vauto=talk?1:2;music(0);vui();
+const host=G.mode=="host";let st=null;
+if(talk){try{st=await navigator.mediaDevices.getUserMedia(MIC)}catch(e){toast("No se pudo abrir el micrófono: entras solo para escuchar");VS.talk=0;G.vauto=2}
+if(tk!=VT){if(st)st.getTracks().forEach(t=>t.stop());return}}
+if(!host){if(!st){st=silentStream();VS.silent=1}}else if(!st)VS.silent=1;
+VOZ=st;
+if(host){vhostInit();if(st)vsrc(G.me,st);VS.st="on";vall();vspStart()}
+else{const hid=(G.peers.find(p=>p.presence&&p.presence.host)||{}).peer;if(!hid||!G.room.peer){voiceOff();return toast("No se encontró al anfitrión")}callHost(hid,st,0)}
 vui()}
-function hostCall(c){const ctx=actx(),ch=chanOf(c.peer),d=ctx.createMediaStreamDestination();VM.dest[c.peer]=d;VM.chan[c.peer]=ch;
-Object.keys(VM.src).forEach(id=>{if(VM.chan[id]==ch&&id!=c.peer)VM.src[id].connect(d)});
-c.answer(d.stream);VC.push(c);
-c.on("stream",st=>{const a=new Audio();a.muted=true;a.srcObject=st;if(a.play)a.play().catch(()=>{});const s=ctx.createMediaStreamSource(st);VM.src[c.peer]=s;
-Object.keys(VM.dest).forEach(id=>{if(id!=c.peer&&VM.chan[id]==ch)s.connect(VM.dest[id])});if(ch==chanOf(G.me))s.connect(ctx.destination)});
-c.on("close",()=>{try{VM.src[c.peer]&&VM.src[c.peer].disconnect()}catch(e){}delete VM.src[c.peer];delete VM.dest[c.peer]})}
-function playV(id,st){let a=document.getElementById("a_"+id);if(!a){a=document.createElement("audio");a.id="a_"+id;a.autoplay=true;a.setAttribute("playsinline","");document.body.appendChild(a)}a.srcObject=st;if(a.play)a.play().catch(()=>{})}
-function voiceOff(){const had=VOZ||VC.length;if(VOZ){VOZ.getTracks().forEach(t=>t.stop());VOZ=null}VC.forEach(c=>{try{c.close()}catch(e){}});VC=[];Object.values(VM.src).forEach(s=>{try{s.disconnect()}catch(e){}});VM={src:{},dest:{},chan:{}};document.querySelectorAll("audio[id^=a_]").forEach(a=>a.remove());if(had&&INGAME)music(1)}
+function callHost(hid,st,n){const tk=VT,c=G.room.peer.call(hid,st);VC.push(c);let got=0;
+const fail=()=>{if(tk!=VT)return;VC=VC.filter(x=>x!==c);try{c._x=1;c.close()}catch(e){}if(n<2){VS.st="conn";vui();callHost(hid,st,n+1)}else{VS.st="fail";vui();toast("Sin respuesta de voz del anfitrión. Revisa Ajustes → Probar conexión")}},
+to=setTimeout(()=>{if(!got)fail()},9000);
+c.on("stream",s=>{if(tk!=VT||got)return;got=1;clearTimeout(to);playV("mix",s);VS.st="on";vui();sendMute()});
+c.on("close",()=>{clearTimeout(to);if(c._x||tk!=VT)return;VC=VC.filter(x=>x!==c);if(VS.st&&VD&&n<6){VS.st="conn";vui();setTimeout(()=>{if(tk==VT&&VD&&G&&G.room&&G.room.peer)callHost(hid,st,n+1)},1200)}});
+c.on("error",()=>{if(tk==VT&&!got)fail()})}
+function playV(id,st){const a=vaudio();a.srcObject=st;const p=a.play&&a.play();if(p&&p.catch)p.catch(()=>{toast("Toca la pantalla para activar el sonido de la sala");document.addEventListener("click",()=>{a.play().catch(()=>{})},{once:true})})}
+function vauto(){if(!G||G.spec||!G.vauto||vact()||window.LAN||!INGAME)return;setTimeout(()=>{if(VD&&!vact()&&G&&G.started)voiceTog(G.vauto==1)},350)}
+/* mezcla del anfitrión: una ganancia por cada par (quien habla → quien escucha) */
+function vhostInit(){const ctx=actx();VM.dest[G.me]=ctx.destination;VM.chan[G.me]=chanOf(G.me);return ctx}
+const vmuted=(d,s)=>{const l=d==G.me?[...MUTED]:(VM.md&&VM.md[d])||[];return l.length>0&&G.p.some(p=>p.dev==s&&p.did&&l.includes(p.did))};
+function vall(){if(!G||G.mode!="host"||!AC)return;Object.keys(VM.src).forEach(s=>Object.keys(VM.dest).forEach(d=>{if(s==d)return;const k=s+">"+d;let g=VG[k];if(!g){g=VG[k]=AC.createGain();try{VM.src[s].connect(g);g.connect(VM.dest[d])}catch(e){}}g.gain.value=(VM.chan[s]==VM.chan[d]&&!vmuted(d,s))?1:0}))}
+function vdrop(id){try{VM.src[id]&&VM.src[id].disconnect()}catch(e){}vgClear(id);try{VM.el[id]&&(VM.el[id].srcObject=null)}catch(e){}["src","dest","chan","an","el","call"].forEach(k=>delete VM[k][id])}
+function hostCall(c){const ctx=vhostInit(),id=c.peer;if(VM.call[id]){try{VM.call[id]._x=1;VM.call[id].close()}catch(e){}vdrop(id)}
+const d=ctx.createMediaStreamDestination();VM.dest[id]=d;VM.chan[id]=chanOf(id);VM.call[id]=c;c.answer(d.stream);VC.push(c);
+c.on("stream",st=>{const a=new Audio();a.muted=true;a.srcObject=st;if(a.play)a.play().catch(()=>{});VM.el[id]=a;vsrc(id,st);vall();vspStart()});
+c.on("close",()=>{VC=VC.filter(x=>x!==c);if(VM.call[id]===c)vdrop(id)});c.on("error",()=>{});vall()}
+function vspStart(){if(VTM)return;VTM=setInterval(()=>{if(!G||G.mode!="host")return;const b=VM.buf||(VM.buf=new Float32Array(512)),l=[];Object.keys(VM.an).forEach(id=>{VM.an[id].getFloatTimeDomainData(b);let e=0;for(let i=0;i<b.length;i++)e+=b[i]*b[i];if(Math.sqrt(e/b.length)>.015)G.p.forEach(p=>{if(p.dev==id&&p.did&&!l.includes(p.did))l.push(p.did)})});l.sort();const k=l.join(",");if(k!=VSP){VSP=k;G.vs=l;vsShow();G.room.emit("vs",{l}).catch(()=>{})}},300)}
+function vsShow(){const l=(G&&G.vs)||[],e=$("#vsp");if(e&&G&&G.p){const mine=i=>G.mine&&G.mine.includes(i),n=G.p.filter((p,i)=>p.did&&l.includes(p.did)&&!mine(i)).map(p=>p.name),me=G.p.some((p,i)=>mine(i)&&p.did&&l.includes(p.did));e.textContent=(n.length?"🔊 Hablando: "+n.join(", "):"")+(me?(n.length?" · ":"")+"🎙️ Se te oye":"")}if($("#mm"))muteUI()}
+function voiceOff(){const had=vact()||VC.length;VT++;VD=0;
+if(VOZ&&!VS.silent)VOZ.getTracks().forEach(t=>t.stop());VOZ=null;
+VC.forEach(c=>{try{c._x=1;c.close()}catch(e){}});VC=[];
+Object.values(VM.src).forEach(s=>{try{s.disconnect()}catch(e){}});Object.values(VG).forEach(g=>{try{g.disconnect()}catch(e){}});VG={};
+Object.values(VM.el).forEach(a=>{try{a.srcObject=null}catch(e){}});
+VM={src:{},dest:{},chan:{},an:{},el:{},call:{},md:VM.md||{}};
+if(VTM){clearInterval(VTM);VTM=null}VSP="";if(G)G.vs=[];VS={st:"",talk:0,silent:0};
+const a=document.getElementById("a_mix");if(a){try{a.pause();a.srcObject=null}catch(e){}}
+const mm=$("#mm");if(mm)mm.remove();
+if(had&&INGAME)music(1)}
+/* silenciar jugadores (solo para quien lo pide): voz y chat */
+function muteUI(){let m=$("#mm");if(!m){m=document.createElement("div");m.id="mm";m.className="ov top";document.body.appendChild(m)}
+const seen={},rows=[],sp=(G.vs||[]);
+G.p.forEach(p=>{const k=p.did||p.dev;if(p.dev==G.me||(p.did&&p.did==S.did)||seen[k])return;seen[k]=1;const names=G.p.filter(q=>(q.did||q.dev)==k).map(q=>esc(q.name)).join(", "),mu=MUTED.has(k);
+rows.push(`<div class="pc"><span>${names}${sp.includes(p.did)?`<i class="spk"></i>`:""}</span><button class="b ${mu?"p":""}" style="width:auto;padding:6px 12px;margin-left:auto" data-k="${esc(k)}" onclick="muteTg(this.dataset.k)">${mu?"🔇 Silenciado":"🔊 Oyendo"}</button></div>`)});
+m.innerHTML=`<div class="pc2"><h2>🔇 Silenciar jugadores</h2><p class="mut">Solo tú dejas de oírlos (voz y chat). Los demás los siguen oyendo.</p><div class="ml">${rows.join("")||`<p class="mut">No hay más jugadores.</p>`}</div><button class="b p" onclick="muteClose()">Listo</button></div>`}
+function muteTg(k){if(MUTED.has(k))MUTED.delete(k);else MUTED.add(k);if(G.mode=="host")vall();else sendMute();muteUI();vui()}
+function muteClose(){const m=$("#mm");if(m)m.remove();vui()}
 /* historia */
 const pk=a=>a[Math.random()*a.length|0];
 const ST={ini:["Cuando la luna se escondió tras las nubes,","A la hora en que ladran los perros,","Mientras la ciudad dormía,","Entre la niebla de medianoche,","Bajo una lluvia fina y callada,"],lug:["el muelle","el callejón detrás del casino","la estación de tren","el viejo almacén","la plaza del pueblo","el puente de piedra","la panadería cerrada","el teatro abandonado"],fin:["Una sombra con guantes negros hizo el resto.","Nadie oyó nada; solo quedó una rosa negra en el suelo.","La vela se apagó y el silencio hizo el resto.","Solo encontraron su sombrero en la acera.","Al amanecer, la puerta seguía entreabierta."],calm:["La noche pasó en calma… demasiada calma.","Los criminales rondaron, pero la ciudad amaneció entera.","Nadie cayó esta noche, aunque todos durmieron con un ojo abierto."]};
 const kill=n=>`${pk(ST.ini)} ${n} cruzó ${pk(ST.lug)} y nunca llegó a casa. ${pk(ST.fin)}`;
-async function hunt(i){const al=idx();if(!al.length)return"";const v=await ask(i,{k:"pick",title:"🏹 Cazador: ¿a quién te llevas contigo?",opts:al});G.p[v].alive=0;return `${G.p[i].name} disparó su última flecha y se llevó a ${G.p[v].name} (${R[G.p[v].role][1]}).`}
-async function run(){INGAME=1;wake();music(1);const n=G.p.length,C=G.cfg||LC,r=[],mc=Math.min(C.m||Math.max(1,n/3|0),(n-1)>>1||1);G.story=[];G.round=0;const NA=C.n!==0;
+async function hunt(i){const al=idx();if(!al.length)return"";const v=await ask(i,{k:"pick",title:"🏹 Cazador: ¿a quién te llevas contigo?",opts:al});if(!(v>=0)||!G.p[v])return G.p[i].name+" se fue sin disparar.";G.p[v].alive=0;return `${G.p[i].name} disparó su última flecha y se llevó a ${G.p[v].name} (${R[G.p[v].role][1]}).`}
+async function run(){INGAME=1;wake();music(1);const n=G.p.length,C=G.cfg||LC,r=[],mc=Math.min(C.m||Math.max(1,n/3|0),(n-1)>>1||1);G.story=[];G.round=0;G.over=0;const NA=C.n!==0;
 for(let i=0;i<mc;i++)r.push("mafia");const sp=[];if(C.r.det)sp.push("detective");if(C.r.vid)sp.push("vidente");if(C.r.san)sp.push("sanador");if(C.r.caz)sp.push("cazador");
 while(sp.length&&r.length<n-1)r.push(sp.shift());while(r.length<n)r.push("ciudadano");shuf(r);G.p.forEach((p,i)=>p.role=r[i]);
 await prog(G.p.map((p,i)=>ask(i,{k:"role",role:p.role,mates:p.role=="mafia"?G.p.filter(x=>x.role=="mafia"&&x!=p).map(x=>x.name):[]})));
 for(;;){await pub("Cae la noche","Todos cierran los ojos",1,NA?5200:3500,Object.assign(NA?{sc:{f:["day","dusk","night"],step:1600}}:{},G.mode!="local"?{task:1}:{}));const al=idx(),mv=[],sv=[],ps=[];
-G.p.forEach((p,i)=>{const q={mafia:{title:"¿A quién eliminan?",opts:al.filter(j=>G.p[j].role!="mafia")},sanador:{title:"¿A quién proteges?",opts:al},detective:{title:"¿A quién investigas?",opts:al.filter(j=>j!=i)},vidente:{title:"¿Qué carta quieres ver?",opts:al.filter(j=>j!=i)}}[p.role];if(!q)return;
-ps.push((async()=>{if(!p.alive){if(G.mode=="local"||p.dev==G.me)await ask(i,{k:"info",e:"💀",t:"Estás eliminado",s:"Sigue la partida en silencio",night:1});else await wait(2500+Math.random()*4000);return}
-const fu=p.role=="detective"?v=>{const m=G.p[v].role=="mafia";return{k:"info",e:m?"🔪":"😇",t:G.p[v].name,s:m?"Es de la mafia":"Es inocente",night:1}}:p.role=="vidente"?v=>{const rr=G.p[v].role;return{k:"info",e:R[rr][0],t:G.p[v].name,s:"Su carta: "+R[rr][1],night:1}}:null;
-const v=await ask(i,{k:"pick",...q,night:1},fu);if(p.role=="mafia")mv.push(v);else if(p.role=="sanador")sv.push(v)})())});
-await prog(ps);
+const nt=i=>{const p=G.p[i],q={mafia:{title:"¿A quién eliminan?",opts:al.filter(j=>G.p[j].role!="mafia")},sanador:{title:"¿A quién proteges?",opts:al},detective:{title:"¿A quién investigas?",opts:al.filter(j=>j!=i)},vidente:{title:"¿Qué carta quieres ver?",opts:al.filter(j=>j!=i)}}[p.role];if(!q)return null;
+return (async()=>{if(!p.alive){if(G.mode=="local"||p.dev==G.me)await ask(i,{k:"info",e:"💀",t:"Estás eliminado",s:"Sigue la partida en silencio",night:1});else await wait(2500+Math.random()*4000);return}
+const role=p.role,fu=role=="detective"?v=>{const m=G.p[v].role=="mafia";return{k:"info",e:m?"🔪":"😇",t:G.p[v].name,s:m?"Es de la mafia":"Es inocente",night:1}}:role=="vidente"?v=>{const rr=G.p[v].role;return{k:"info",e:R[rr][0],t:G.p[v].name,s:"Su carta: "+R[rr][1],night:1}}:null;
+const v=await ask(i,{k:"pick",...q,night:1},fu);if(v>=0){G.nd[i]=1;if(role=="mafia")mv.push(v);else if(role=="sanador")sv.push(v)}})()};
+G.nd={};G.nt={add:i=>{const pr=nt(i);if(pr)ps.add(pr)}};G.p.forEach((p,i)=>{const pr=nt(i);if(pr)ps.push(pr)});
+await prog(ps);G.nt=null;
 let v=null;if(mv.length){const c={};mv.forEach(j=>c[j]=(c[j]||0)+1);const mx=Math.max(...Object.values(c)),t=Object.keys(c).filter(j=>c[j]==mx);v=+t[Math.random()*t.length|0]}
 let s,sc=null,vr,hk=0;
 if(v===null){s=NA?pk(ST.calm):"Nadie murió esta noche.";if(NA)sc={f:["night","dawn_ok"]};snd(520,.4)}
@@ -602,6 +660,89 @@ const c={};vt.filter(j=>j>=0).forEach(j=>c[j]=(c[j]||0)+1);const mx=Math.max(0,.
 if(t.length==1&&mx>0){const p=G.p[+t[0]];p.alive=0;s2=NA?`El pueblo señaló a ${p.name} (${mx} voto${mx>1?"s":""}). Al caer la máscara, era ${R[p.role][1]}.`:`${p.name} fue eliminado con ${mx} voto${mx>1?"s":""}. Era ${R[p.role][1]}.`;snd(160,.5,"sawtooth");if(NA)sc2={f:["plaza1","plaza2","after_plaza"]};if(p.role=="cazador"){s2+=" "+await hunt(+t[0]);hk2=1}}
 if(NA)G.story.push(s2);await pub("Resultado de la votación",s2,0,NA?9500:7000,{react:1,...(sc2?{sc:(hk2&&sc2.f.push("hunter"),sc2)}:{})});if(chk())return}}
 
+/* =====================================================================
+   Pausa de la partida, salidas con traspaso de rol, cerrar el juego
+   ===================================================================== */
+const GT={a:1,chat:1,react:1,bye:1,lva:1,vm:1,preq:1};   // temas que un invitado puede enviar al anfitrión
+/* --- pausa: los tiempos de la partida (anfitrión) se pueden congelar --- */
+const PZ={man:0,auto:0,q:[],t:{},n:0};let TM=null,TG=0;
+const pzOn=()=>!!(PZ.man||PZ.auto);
+function ptm(fn,ms){const id=++PZ.n,e={left:ms,at:0,h:0};e.run=()=>{e.at=Date.now();e.h=setTimeout(()=>{delete PZ.t[id];fn()},e.left)};PZ.t[id]=e;if(!pzOn())e.run();return id}
+function pzApply(){const on=pzOn();Object.values(PZ.t).forEach(e=>{if(on&&e.h){clearTimeout(e.h);e.h=0;e.left=Math.max(0,e.left-(Date.now()-e.at))}else if(!on&&!e.h)e.run()});
+if(!on){const q=PZ.q;PZ.q=[];q.forEach(r=>r())}tickPz(on);pzOv()}
+const hold=()=>pzOn()?new Promise(r=>PZ.q.push(r)):Promise.resolve();
+function tickPz(on){if(!TM)return;if(on&&!TM.p){TM.p=1;TM.left=Math.max(0,TM.end-Date.now())}else if(!on&&TM.p){TM.p=0;TM.end=Date.now()+TM.left}}
+function pzReset(){PZ.man=0;PZ.auto=0;Object.values(PZ.t).forEach(e=>clearTimeout(e.h));PZ.t={};PZ.q=[];TM=null;if(LVC)clearTimeout(LVC.t);LVC=null;LVQ=[];if(LVI)clearInterval(LVI);LVI=0;["pzo","lvm","lvn"].forEach(i=>{const e=document.getElementById(i);if(e)e.remove()})}
+function pzOv(){let o=$("#pzo");if(!PZ.man||!INGAME||!G||G.mode=="local"){if(o)o.remove();return}
+if(!o){o=document.createElement("div");o.id="pzo";o.className="ov";document.body.appendChild(o)}
+const h=G.mode=="host";o.innerHTML=`<div class="pc2"><h2>⏸ Partida en pausa</h2><p class="mut">${h?"Los tiempos están detenidos para todos.":"El anfitrión pausó la partida."}</p>${h?`<button class="b p" onclick="pzToggle()">▶️ Reanudar</button>`:""}<button class="b" onclick="pauseM()">⚙️ Ajustes / Salir</button></div>`}
+function pzToggle(){if(!G||G.mode!="host")return;PZ.man=PZ.man?0:1;G.preq=[];G.room.emit("pz",{on:PZ.man}).catch(()=>{});pzApply();if($("#pm"))pmDraw();toast(PZ.man?"⏸ Partida en pausa":"▶️ Partida reanudada")}
+const muteBtn=()=>`<button class="b" onclick="muteUI()">🔇 Silenciar jugadores${MUTED.size?" ("+MUTED.size+")":""}</button>`;
+function pzBtns(){if(G.mode=="host")return `<button class="b ${PZ.man?"p":""}" onclick="pzToggle()">${PZ.man?"▶️ Reanudar la partida":"⏸ Pausar partida para todos"}</button>${G.preq&&G.preq.length?`<p class="mut">✋ Piden pausa: ${G.preq.map(esc).join(", ")}</p>`:""}`+muteBtn();return `<button class="b" onclick="pzReq()">✋ Pedir pausa al anfitrión</button>`+muteBtn()}
+function pzReq(){const n=(G.mine&&G.mine.length&&G.p[G.mine[0]]?G.p[G.mine[0]].name:S.name)||"Alguien";G.room.emit("preq",{n}).catch(()=>{});toast("Pedido enviado al anfitrión")}
+function roomExtras(r,h){
+r.on("pz",m=>{if(!G||G.mode!="guest"||!m.data)return;PZ.man=m.data.on?1:0;pzApply()});
+r.on("hend",()=>{if(G&&G.mode=="guest")G.ended=1});
+r.on("lv",m=>{if(G&&G.mode=="guest"&&m.data)lvShow(m.data)});
+r.on("lvn",m=>{const d=m.data;if(!G||G.mode!="guest"||!d||d.to!=G.me)return;lvNote(d)});
+r.on("vs",m=>{if(!G||G.mode!="guest"||!m.data||!Array.isArray(m.data.l))return;G.vs=m.data.l.filter(x=>typeof x=="string");vsShow()});
+if(h){
+r.on("bye",m=>{if(!G||!m.from)return;G.bye=G.bye||{};G.bye[m.from]=1});
+r.on("preq",m=>{if(!G||!G.started||!m.data)return;const n=String(m.data.n||"Alguien").slice(0,14);G.preq=G.preq||[];if(!G.preq.includes(n))G.preq.push(n);toast("✋ "+n+" pide una pausa")});
+r.on("vm",m=>{if(!G||!m.from||!m.data||!Array.isArray(m.data.l))return;VM.md=VM.md||{};VM.md[m.from]=m.data.l.filter(x=>typeof x=="string").slice(0,40);vall()});
+r.on("lva",m=>lvAns(m.from,m.data))}}
+/* --- salidas: espera, votación (esperar / seguir sin él) y traspaso del rol a un ciudadano --- */
+let LVC=null,LVQ=[],LVI=0,LVID=0,LVRD=0,LVKEY="",LGR=12,LVT=25,LWT=30;const LVMY={};
+const lvConn=d=>G.peers.some(x=>x.peer==d);
+function lvAdd(id){if(!G||G.over)return;if(!G.p.some(p=>p.dev==id&&p.alive)){lvFlush(id);return}if((LVC&&LVC.dev==id)||LVQ.includes(id))return;LVQ.push(id);lvNext()}
+function lvNext(){if(LVC||!LVQ.length||!G||!G.started||G.over)return;const dev=LVQ.shift(),L=G.p.map((p,i)=>i).filter(i=>G.p[i].dev==dev&&G.p[i].alive);if(!L.length){lvFlush(dev);return lvNext()}
+LVC={dev,L,nm:L.map(i=>G.p[i].name).join(", "),ph:"grace",votes:{},rid:++tidc,t:0,until:0};PZ.auto++;pzApply();
+if(G.bye&&G.bye[dev])lvVote();else{lvSay("grace",{sec:LGR});LVC.t=setTimeout(()=>{if(LVC&&LVC.dev==dev&&LVC.ph=="grace")lvVote()},LGR*1000)}}
+function lvSay(k,x){if(!G||G.mode!="host")return;const d={k,id:LVC?LVC.rid:0,nm:LVC?LVC.nm:"",...x};G.room.emit("lv",d).catch(()=>{});lvShow(d)}
+function lvElig(){const s=[];G.p.forEach(p=>{if(!p.left&&p.dev!=LVC.dev&&lvConn(p.dev)&&!s.includes(p.dev))s.push(p.dev)});return s}
+function lvVote(){if(!LVC)return;clearTimeout(LVC.t);LVC.ph="vote";LVC.rd=(LVC.rd||0)+1;LVC.votes={};LVC.until=Date.now()+LVT*1000;LVC.t=setTimeout(()=>lvTally(1),LVT*1000);lvTally(0)}
+function lvTally(fin){if(!LVC||LVC.ph!="vote")return;const el=lvElig(),n=el.length;let w=0,g=0;el.forEach(d=>{const v=LVC.votes[d];if(v=="w")w++;else if(v=="g")g++});const need=(n>>1)+1;let r=null;
+if(g>=need)r="g";else if(w>=need)r="w";else if(fin||w+g>=n)r=g>w?"g":w>g?"w":(w+g?"w":"g");
+if(!r){lvSay("vote",{rd:LVC.rd,sec:Math.max(1,Math.ceil((LVC.until-Date.now())/1000)),w,g,n});return}
+clearTimeout(LVC.t);r=="g"?lvGo():lvWait()}
+function lvAns(from,d){if(!LVC||LVC.ph!="vote"||!d||d.id!=LVC.rid||d.rd!=LVC.rd||!from)return;if(!lvElig().includes(from))return;LVC.votes[from]=d.v=="g"?"g":"w";lvTally(0)}
+function lvPick(v){if(!G)return;LVMY[LVKEY]=v;if(G.mode=="host"){if(LVC&&LVC.ph=="vote"){LVC.votes[G.me]=v;lvTally(0)}}else G.room.emit("lva",{id:LVID,rd:LVRD,v}).catch(()=>{});const m=$("#lvm");if(m&&m.dataset.k=="vote"){const a=$("#lvw"),b=$("#lvg");[a,b].forEach(x=>{if(x)x.disabled=true});(v=="w"?a:b)&&(v=="w"?a:b).classList.add("p")}}
+function lvWait(){if(!LVC)return;LVC.ph="wait";lvSay("wait",{sec:LWT});LVC.t=setTimeout(()=>{if(LVC&&LVC.ph=="wait")lvVote()},LWT*1000)}
+function lvHeir(i){const c=[];G.p.forEach((p,j)=>{if(p.alive&&p.role=="ciudadano"&&!p.left&&p.dev!=G.p[i].dev&&lvConn(p.dev))c.push(j)});return c.length?c[Math.random()*c.length|0]:-1}
+function lvGo(){const dev=LVC.dev,L=LVC.L.slice(),nm=LVC.nm;let gone=0;
+L.forEach(i=>{const p=G.p[i];if(!p.alive||p.role=="ciudadano")return;const role=p.role,j=lvHeir(i);
+if(j>=0){const h=G.p[j];h.role=role;p.role="ciudadano";lvTell(j,role,p.name);if(G.nt&&!(G.nd&&G.nd[i]))G.nt.add(j)}
+else{p.alive=0;gone=1}});
+lvFlush(dev);lvEnd(gone?"gone":"go",nm)}
+function lvTell(j,role,old){const h=G.p[j],mates=role=="mafia"?G.p.filter(x=>x.role=="mafia"&&x!==h&&x.alive).map(x=>x.name):[];lvNoteTo(h.dev,{k:"heir",role,mates,old,pn:h.name});
+if(role=="mafia"){const seen={};G.p.forEach(x=>{if(x.role=="mafia"&&x!==h&&x.alive&&!x.left&&x.dev!=h.dev&&!seen[x.dev]){seen[x.dev]=1;lvNoteTo(x.dev,{k:"mate",nm:h.name,old})}})}}
+function lvNoteTo(dev,d){d.to=dev;if(dev==G.me)lvNote(d);else G.room.emit("lvn",d).catch(()=>{})}
+function lvNote(d){let m=$("#lvn");if(!m){m=document.createElement("div");m.id="lvn";m.className="ov n";document.body.appendChild(m)}
+if(d.k=="heir"){const r=R[d.role]||R.ciudadano;m.innerHTML=`<div class="pc2"><div class="role"><div class="e">${r[0]}</div><h2>${esc(d.pn||"")}, ¡heredaste un rol!</h2><p>${esc(d.old||"Un jugador")} dejó la partida y ahora eres <b>${r[1]}</b>.</p><p class="mut">${r[2]}</p>${d.role=="mafia"?`<p class="mut">${d.mates&&d.mates.length?"Tus cómplices: <b>"+d.mates.map(x=>esc(x)).join(", ")+"</b>":"Eres el único mafioso."}</p>`:""}</div><button class="b p" onclick="lvNoteClose()">Entendido</button></div>`}
+else m.innerHTML=`<div class="pc2"><div class="role"><div class="e">🔪</div><h2>Nuevo cómplice</h2><p>${esc(d.old||"Un mafioso")} dejó la partida. Ahora <b>${esc(d.nm)}</b> es de la mafia y juega contigo.</p></div><button class="b p" onclick="lvNoteClose()">Entendido</button></div>`;vib([60,40,60])}
+function lvNoteClose(){const m=$("#lvn");if(m)m.remove()}
+function lvFlush(dev){Object.keys(pd).forEach(t=>{const e=pd[t];if(e&&e.dev==dev&&pend[t]){const f=pend[t];delete pend[t];delete pd[t];f(e.defL())}})}
+function lvEnd(kind,nm){if(LVC)clearTimeout(LVC.t);lvSay("done",{kind,nm});LVC=null;PZ.auto=Math.max(0,PZ.auto-1);pzApply();lvNext()}
+function lvBack(dev){LVQ=LVQ.filter(x=>x!=dev);if(LVC&&LVC.dev==dev){clearTimeout(LVC.t);lvSay("back");LVC=null;PZ.auto=Math.max(0,PZ.auto-1);pzApply();lvNext()}}
+function lvClose(){const m=$("#lvm");if(m)m.remove();if(LVI){clearInterval(LVI);LVI=0}}
+function lvShow(d){if(d.k=="back"){lvClose();toast("✅ "+d.nm+" volvió a la partida");return}
+let m=$("#lvm");if(!m){m=document.createElement("div");m.id="lvm";m.className="ov top";document.body.appendChild(m)}
+LVID=d.id;LVRD=d.rd||0;LVKEY=d.id+":"+LVRD;if(LVI){clearInterval(LVI);LVI=0}const sec=+d.sec||0,cd=`<p class="coin" id="lvs"></p>`;let b="";
+if(d.k=="grace")b=`<h2>⏳ ${esc(d.nm)} se desconectó</h2><p class="mut">Esperamos unos segundos por si vuelve…</p>${cd}`;
+else if(d.k=="wait")b=`<h2>⏳ Esperando a ${esc(d.nm)}</h2><p class="mut">La partida sigue en pausa. Si no vuelve, se vota de nuevo.</p>${cd}`;
+else if(d.k=="vote"){const can=G.mode=="host"||(!G.spec&&G.mine&&G.mine.length),my=LVMY[LVKEY],dis=my?"disabled":"";b=`<h2>⚠️ ${esc(d.nm)} no vuelve</h2><p class="mut">¿Qué hacemos? Si seguimos sin él, su rol pasa a un ciudadano para no perderlo.</p>${can?`<div class="two"><button class="b ${my=="w"?"p":""}" id="lvw" ${dis} onclick="lvPick('w')">⏳ Esperar</button><button class="b ${my=="g"?"p":""}" id="lvg" ${dis} onclick="lvPick('g')">▶️ Seguir sin él</button></div>`:`<p class="mut">Votan los jugadores.</p>`}<p class="mut">${d.n!=null?"Esperar: "+d.w+" · Seguir: "+d.g+" · votantes: "+d.n:""}</p>${cd}`}
+else if(d.k=="done"){b=`<h2>${d.kind=="gone"?"🚪":"▶️"} ${esc(d.nm)} salió de la partida</h2><p class="mut">${d.kind=="gone"?"No había quién ocupara su lugar: queda fuera de la partida.":"La partida continúa."}</p>`;setTimeout(()=>{const e=$("#lvm");if(e&&e.dataset.k=="done")e.remove()},3500)}
+m.dataset.k=d.k;m.innerHTML=`<div class="pc2">${b}</div>`;
+if(sec&&d.k!="done"){const end=Date.now()+sec*1000,f=()=>{const e=$("#lvs");if(!e){clearInterval(LVI);LVI=0;return}e.textContent="⏱ "+Math.max(0,Math.ceil((end-Date.now())/1000))+" s"};f();LVI=setInterval(f,500)}}
+/* --- salir de la sala / cerrar el juego --- */
+function byeRoom(){const g=G;if(!g||!g.room)return;const rm=g.room;let d=0;
+try{if(g.mode=="guest"&&g.started&&!g.ended){rm.emit("bye",{}).catch(()=>{});d=1}else if(g.mode=="host"&&g.started&&!g.ended){rm.emit("hend",{}).catch(()=>{});d=1}}catch(e){}
+if(d)setTimeout(()=>{try{rm.leave()}catch(e){}},400);else try{rm.leave()}catch(e){}}
+function quitApp(){try{byeRoom()}catch(e){}G=null;INGAME=0;pzReset();wakeOff();closeP();voiceOff();music(0);
+setTimeout(()=>{const C=window.Capacitor;try{if(C&&C.Plugins&&C.Plugins.App&&C.Plugins.App.exitApp){C.Plugins.App.exitApp();return}}catch(e){}
+if(/Electron/i.test(navigator.userAgent)){try{fetch("/__cerrar",{method:"POST",headers:{"X-Mafia":"1"}}).catch(()=>{})}catch(e){}}
+try{window.close()}catch(e){}
+scr(`<div class="logo" style="margin-top:80px">MAFIA</div><h2>Juego cerrado</h2><p class="mut">Ya puedes cerrar esta pestaña o ventana.</p><button class="b p" onclick="menu()">Volver a jugar</button>`)},450)}
 
 ROOM=window.Peer?1:null;
 (async()=>{try{const r=await Promise.race([fetch("skins.json",{cache:"no-store"}),wait(2500)]);const a=await r.json();if(a&&a.scenes)Object.entries(a.scenes).forEach(([k,v])=>{if(SCF[k])PACKSC[k]=String(v)});(Array.isArray(a)?a:a.skins||[]).forEach(x=>{if(x&&/^[\w-]{1,30}$/.test(x.id)&&x.img)PACK[x.id]={id:x.id,name:String(x.name||x.id).slice(0,20),price:+x.price||0,img:String(x.img)}})}catch(e){}

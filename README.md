@@ -68,3 +68,11 @@ Frenos para no pasarte del plan gratis (editables en `cloudflare/wrangler.jsonc`
 - Al llegar al tope el servicio responde "límite" y el juego sigue con conexión directa (sin relevo).
 - No agregues tarjeta de pago a Cloudflare mientras no la necesites.
 - Para probar el servicio sin internet: `node cloudflare/test/probar.mjs`.
+
+## 7) Novedades de esta versión
+- **Voz más robusta**: ya no hace falta dar permiso de micrófono para solo escuchar; se reintenta sola si falla; se ve quién está hablando y el estado de la conexión; en los siguientes debates se une sola si ya usaste la voz.
+- **Silenciar jugadores**: botón "Silenciar jugadores" en el panel de voz y en el menú de pausa (solo afecta a quien lo pide; silencia voz y chat).
+- **Pausa y salir**: el botón ⏸ abre el menú; el anfitrión puede "Pausar partida para todos" (congela los tiempos) y los invitados pueden pedirla. "Salir de la partida" avisa a los demás.
+- **Si alguien se va a mitad de partida**: se espera unos segundos por si vuelve; luego los demás votan "Esperar" o "Seguir sin él". Si siguen, su rol (mafioso, detective, sanador, vidente, cazador) pasa a un ciudadano al azar, que recibe un aviso privado. Si no queda ningún ciudadano disponible, el jugador queda fuera.
+- Si se va el **anfitrión**, la partida termina para todos (él lleva la partida).
+- **Cerrar juego** en el menú principal (Android necesita `@capacitor/app`, ya añadido a package.json).

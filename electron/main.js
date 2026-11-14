@@ -23,7 +23,7 @@ app.whenReady().then(async () => {
   session.defaultSession.setPermissionRequestHandler((wc, permiso, cb) =>
     cb(["media", "fullscreen", "clipboard-sanitized-write"].includes(permiso)));
   try {
-    info = await start({ port: 8765, root: path.join(__dirname, "..", "www") });
+    info = await start({ port: 8765, root: path.join(__dirname, "..", "www"), onQuit: () => app.quit() });
   } catch (e) {
     dialog.showErrorBox("Mafia", "No se pudo iniciar el servidor Wi-Fi local: " + e.message);
     app.quit();

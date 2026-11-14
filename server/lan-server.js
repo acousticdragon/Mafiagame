@@ -19,6 +19,9 @@ function start(opt){opt=opt||{};return new Promise((resolve,reject)=>{
 const root=path.resolve(opt.root||path.join(__dirname,"..","www")),peers=new Map();let port=opt.port||8765,tries=0;
 const server=http.createServer((req,rsp)=>{let u;try{u=decodeURIComponent((req.url||"/").split("?")[0])}catch(e){rsp.writeHead(400);return rsp.end()}
 if(u=="/lan.json"){rsp.writeHead(200,{"content-type":"application/json","cache-control":"no-store"});return rsp.end(JSON.stringify({app:"mafia-lan",port:server.address().port,ips:lanIPs()}))}
+if(u=="/__cerrar"){const o=req.headers.origin,ra=String(req.socket.remoteAddress||""),loop=/^(::1|127\.0\.0\.1|::ffff:127\.0\.0\.1)$/.test(ra);
+if(req.method!="POST"||!opt.onQuit||!loop||req.headers["x-mafia"]!="1"||(o&&!/^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(o))){rsp.writeHead(403);return rsp.end()}
+rsp.writeHead(204);rsp.end();setTimeout(opt.onQuit,150);return}
 if(u=="/qr.svg"){const t=new URL(req.url,"http://x").searchParams.get("u")||"";rsp.writeHead(200,{"content-type":"image/svg+xml","cache-control":"no-store"});return rsp.end(qrSvg(t))}
 if(u.endsWith("/"))u+="index.html";const f=path.join(root,path.normalize(u));if(!f.startsWith(root)){rsp.writeHead(403);return rsp.end()}
 fs.readFile(f,(e,b)=>{if(e){rsp.writeHead(404,{"content-type":"text/plain; charset=utf-8"});return rsp.end("No encontrado")}rsp.writeHead(200,{"content-type":MIME[path.extname(f).toLowerCase()]||"application/octet-stream","cache-control":"no-cache"});rsp.end(b)})});
