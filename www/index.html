@@ -80,8 +80,9 @@ body.lo .scn *{animation:none!important}
 .frm.f6{box-shadow:inset 0 0 0 4px #c9d1d9,inset 0 0 8px #fff9}.frm.f7{box-shadow:inset 0 0 0 4px #e0115f,inset 0 0 10px #ff6a9a}.frm.f8{box-shadow:inset 0 0 0 4px #1fa971,inset 0 0 10px #7dffc0}
 .frm.f9{box-shadow:inset 0 0 0 4px #5b3cc4,inset 0 0 14px #b79cff;animation:gal 4s linear infinite}@keyframes gal{to{filter:hue-rotate(120deg)}}
 .frm.f10{border:4px dotted #ffd34d;box-sizing:border-box}.frm.f11{box-shadow:inset 0 0 0 3px #e0b020,inset 0 0 0 7px #0d0d11,inset 0 0 0 9px #e0b020}
-.ov{position:fixed;inset:0;z-index:90;background:rgba(0,0,0,.78);display:grid;place-items:center;padding:16px;overflow:auto}.ov.top{z-index:99}.ov.n{z-index:101}
+.ov{position:fixed;inset:0;z-index:90;background:rgba(0,0,0,.78);display:flex;align-items:center;justify-content:center;padding:16px;overflow:auto}.ov>.pc2{margin:auto;width:100%;max-width:400px;box-sizing:border-box}.ov.top{z-index:99}.ov.n{z-index:101}
 .ml{display:grid;gap:8px;text-align:left}.spk{display:inline-block;width:10px;height:10px;border-radius:50%;background:#2fb36b;margin-left:6px;vertical-align:middle;animation:pls 1s infinite alternate}.vcs{font-size:13px;margin:4px 0 8px;text-align:left}
+.ml{max-height:58vh;overflow:auto;padding:2px}.mr{display:flex;align-items:center;gap:12px;background:var(--s);border:1px solid var(--l);border-radius:14px;padding:10px 12px;text-align:left}.mr .av{flex:none}.mr .nm{flex:1;min-width:0}.mr .nm b{display:block;font-size:16px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.mr .nm small{color:var(--mut);font-size:12px}.mr.sp .av{box-shadow:0 0 0 3px #2fb36b}.mr.mu .av{opacity:.5;filter:grayscale(1)}.mr.mu .nm b{text-decoration:line-through;opacity:.7}.mt{flex:none;width:48px;height:48px;border-radius:50%;border:1px solid var(--l);background:var(--bg);font-size:22px;cursor:pointer;color:inherit}.mt.on{background:#c0392b;border-color:#c0392b}
 </style></head><body><div id="app"></div><button id="pz" class="pz" style="display:none" onclick="pauseM()">⏸</button>
 <script>
 const $=s=>document.querySelector(s),app=$("#app"),wait=ms=>new Promise(r=>setTimeout(r,ms));
@@ -162,7 +163,7 @@ let AC;function snd(f,d=.12,t="sine"){if(!S.vol)return;try{AC=AC||new(window.Aud
 document.addEventListener("click",e=>{if(S.clk&&e.target.closest(".b,.card")){const q=CKP[S.clkp||0]||CKP[0];snd(q[2],.06,q[3])}});
 const esc=s=>String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 const PACK={};
-var CAM=null,INGAME=0;const scr=(h,n)=>{if(CAM){CAM.getTracks().forEach(t=>t.stop());CAM=null}document.documentElement.dataset.theme=S.theme;applyAcc();document.body.classList.toggle("night",!!n);document.body.classList.toggle("lo",S.q=="low");tkClear();app.innerHTML=`<div class="sc">${h}</div>`;if($("#tk"))startTask();window.scrollTo(0,0);const z=$("#pz");if(z)z.style.display=INGAME?"flex":"none";document.body.style.fontSize=S.fs?"19px":"16px"};
+var CAM=null,INGAME=0;const scr=(h,n)=>{if(CAM){CAM.getTracks().forEach(t=>t.stop());CAM=null}document.documentElement.dataset.theme=S.theme;applyAcc();document.body.classList.toggle("night",!!n);document.body.classList.toggle("lo",S.q=="low");tkClear();app.innerHTML=`<div class="sc">${h}</div>`;if($("#tk"))tkInit();window.scrollTo(0,0);const z=$("#pz");if(z)z.style.display=INGAME?"flex":"none";document.body.style.fontSize=S.fs?"19px":"16px"};
 const tb=t=>`<div class="top"><button class="x" onclick="menu()">‹</button><b>${t}</b><span></span></div>`;
 const shuf=a=>{for(let i=a.length-1;i>0;i--){const j=Math.random()*(i+1)|0;[a[i],a[j]]=[a[j],a[i]]}return a};
 function toast(m){const t=document.createElement("div");t.className="toast";t.textContent=m;document.body.appendChild(t);setTimeout(()=>t.remove(),2000)}
@@ -310,7 +311,8 @@ const FOB=f=>{const r=c=>`<rect x="4" y="2" width="92" height="108" fill="${c}"/
 
 /* ---------- tareas (minijuegos mientras esperas) ---------- */
 let TKT=[];const tkClear=()=>{TKT.forEach(t=>{clearTimeout(t);clearInterval(t)});TKT=[]};
-function startTask(){const e=$("#tk");if(!e)return;tkClear();e.innerHTML=`<p class="mut cap">🛠️ Tarea mientras esperas</p><div id="tkb"></div>`;
+function tkInit(){const e=$("#tk");if(!e)return;tkClear();e.innerHTML=`<button class="b" onclick="startTask()">🎮 Jugar minijuegos</button>`}
+function startTask(){const e=$("#tk");if(!e)return;tkClear();e.innerHTML=`<p class="mut cap">🛠️ Tarea mientras esperas</p><div id="tkb"></div><button class="b g" style="margin-top:10px" onclick="tkInit()">Ocultar minijuegos</button>`;
 pk([tOrden,tPares,tSync])($("#tkb"),()=>{G.tc=G.tc||0;if(G.tc<10){G.tc++;S.coins+=2;save();toast("✔ Tarea completada · +2 🪙")}else toast("✔ Tarea completada");TKT.push(setTimeout(startTask,900))})}
 function tOrden(b,ok){let n=1;const a=shuf([1,2,3,4,5,6,7,8,9]);b.innerHTML=`<p class="mut">Toca del 1 al 9 en orden</p><div class="tkg">${a.map(v=>`<button class="b" data-v="${v}">${v}</button>`).join("")}</div>`;
 b.onclick=e=>{const t=e.target.closest("button");if(!t||t.disabled)return;if(+t.dataset.v==n){t.classList.add("p");t.disabled=true;snd(500+n*40,.08);if(++n>9)ok()}else vib(30)}}
@@ -627,9 +629,9 @@ if(had&&INGAME)music(1)}
 /* silenciar jugadores (solo para quien lo pide): voz y chat */
 function muteUI(){let m=$("#mm");if(!m){m=document.createElement("div");m.id="mm";m.className="ov top";document.body.appendChild(m)}
 const seen={},rows=[],sp=(G.vs||[]);
-G.p.forEach(p=>{const k=p.did||p.dev;if(p.dev==G.me||(p.did&&p.did==S.did)||seen[k])return;seen[k]=1;const names=G.p.filter(q=>(q.did||q.dev)==k).map(q=>esc(q.name)).join(", "),mu=MUTED.has(k);
-rows.push(`<div class="pc"><span>${names}${sp.includes(p.did)?`<i class="spk"></i>`:""}</span><button class="b ${mu?"p":""}" style="width:auto;padding:6px 12px;margin-left:auto" data-k="${esc(k)}" onclick="muteTg(this.dataset.k)">${mu?"🔇 Silenciado":"🔊 Oyendo"}</button></div>`)});
-m.innerHTML=`<div class="pc2"><h2>🔇 Silenciar jugadores</h2><p class="mut">Solo tú dejas de oírlos (voz y chat). Los demás los siguen oyendo.</p><div class="ml">${rows.join("")||`<p class="mut">No hay más jugadores.</p>`}</div><button class="b p" onclick="muteClose()">Listo</button></div>`}
+G.p.forEach(p=>{const k=p.did||p.dev;if(p.dev==G.me||(p.did&&p.did==S.did)||seen[k])return;seen[k]=1;const grp=G.p.filter(q=>(q.did||q.dev)==k),names=grp.map(q=>(q.alive?"":"💀 ")+esc(q.name)).join(", "),mu=MUTED.has(k),sk=sp.includes(p.did);
+rows.push(`<div class="mr${mu?" mu":""}${sk?" sp":""}"><div class="av">${av(p.av)}</div><div class="nm"><b>${names}</b><small>${mu?"🔇 Silenciado":sk?"🔊 Hablando ahora":"Se oye normal"}${grp.length>1?" · "+grp.length+" jugadores":""}</small></div><button class="mt${mu?" on":""}" aria-label="${mu?"Quitar silencio":"Silenciar"}" data-k="${esc(k)}" onclick="muteTg(this.dataset.k)">${mu?"🔇":"🔊"}</button></div>`)});
+m.innerHTML=`<div class="pc2"><h2>🔇 Silenciar jugadores</h2><p class="mut">Toca el altavoz de un jugador para dejar de oírlo (voz y chat). Solo te afecta a ti.</p><div class="ml">${rows.join("")||`<p class="mut">No hay más jugadores.</p>`}</div><button class="b p" onclick="muteClose()">Listo</button></div>`}
 function muteTg(k){if(MUTED.has(k))MUTED.delete(k);else MUTED.add(k);if(G.mode=="host")vall();else sendMute();muteUI();vui()}
 function muteClose(){const m=$("#mm");if(m)m.remove();vui()}
 /* historia */
